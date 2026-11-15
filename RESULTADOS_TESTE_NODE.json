@@ -1,0 +1,30 @@
+{
+  "ambiente": "Node v22.16.0",
+  "info": "Dados sintéticos gerados a partir dos 124 registros classificados. Mediana de 5 rodadas, não mede telefone nem qualidade cinematográfica.",
+  "benchmark": [
+    {
+      "registros": 1000,
+      "gerar_ms": "0.53",
+      "busca_ms": "0.77",
+      "inferir_ms": "0.32",
+      "html24_ms": "0.01",
+      "candidatos": 35
+    },
+    {
+      "registros": 5000,
+      "gerar_ms": "4.88",
+      "busca_ms": "3.98",
+      "inferir_ms": "0.45",
+      "html24_ms": "0.01",
+      "candidatos": 175
+    },
+    {
+      "registros": 10000,
+      "gerar_ms": "5.43",
+      "busca_ms": "7.37",
+      "inferir_ms": "0.94",
+      "html24_ms": "0.01",
+      "candidatos": 350
+    }
+  ]
+}

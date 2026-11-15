@@ -1,0 +1,49 @@
+﻿Título;Ano;Gênero;Atmosferas;Narrativas;Ritmo;Reviravolta (editorial);Etiquetas (editoriais)
+Janela Indiscreta;1954;suspense;tensa, reflexiva;investigacao, misterio;moderado;não;investigativo, misterio_complexo, reflexivo, sem_reviravolta, suspense_enigmatico, suspense_investigativo, tensao_alta
+O Segredo dos Seus Olhos;2009;suspense;sombria, emocional;investigacao, misterio;moderado;sim;emocional, investigativo, misterio_complexo, reviravolta, sombrio, suspense_enigmatico, suspense_investigativo
+O Homem Duplicado;2013;suspense;sombria, reflexiva;psicologica, misterio;lento;sim;construcao_lenta, misterio_complexo, psicologico, reflexivo, reviravolta, sombrio, suspense_enigmatico, suspense_psicologico
+Fragmentado;2016;suspense;sombria, tensa;psicologica, misterio;rapido;sim;misterio_complexo, psicologico, reviravolta, ritmo_intenso, sombrio, suspense_psicologico, tensao_alta
+O Presente;2015;suspense;sombria, tensa;psicologica, misterio;moderado;sim;misterio_complexo, psicologico, reviravolta, sombrio, suspense_psicologico, tensao_alta
+A Garota no Trem;2016;suspense;sombria, tensa;investigacao, misterio;moderado;sim;investigativo, misterio_complexo, reviravolta, sombrio, suspense_enigmatico, suspense_investigativo, tensao_alta
+O Abutre;2014;suspense;sombria, reflexiva;psicologica, critica_social;rapido;não;critica_social, psicologico, reflexivo, ritmo_intenso, sem_reviravolta, sombrio, suspense_psicologico
+Anatomia de uma Queda;2023;suspense;tensa, reflexiva;investigacao, misterio;lento;não;construcao_lenta, investigativo, misterio_complexo, reflexivo, sem_reviravolta, suspense_investigativo, tensao_alta
+O Iluminado;1980;terror;sombria, tensa;psicologica, misterio;lento;não;construcao_lenta, psicologico, sem_reviravolta, sombrio, tensao_alta, terror_psicologico
+O Chamado;2002;terror;sombria, tensa;misterio, investigacao;moderado;não;investigativo, sem_reviravolta, sombrio, tensao_alta, terror_investigativo, terror_sobrenatural
+Atividade Paranormal;2007;terror;sombria, tensa;misterio;lento;não;construcao_lenta, sem_reviravolta, sombrio, tensao_alta, terror_sobrenatural
+A Visita;2015;terror;tensa, sombria;misterio, psicologica;moderado;sim;psicologico, reviravolta, sombrio, tensao_alta, terror_psicologico
+Os Outros;2001;terror;sombria, tensa;misterio, psicologica;lento;sim;construcao_lenta, psicologico, reviravolta, sombrio, tensao_alta, terror_sobrenatural
+Fale Comigo;2022;terror;sombria, tensa;psicologica;rapido;não;psicologico, ritmo_intenso, sem_reviravolta, sombrio, tensao_alta, terror_psicologico, terror_sobrenatural
+O Homem Invisível;2020;terror;sombria, tensa;psicologica, misterio;rapido;não;psicologico, ritmo_intenso, sem_reviravolta, sombrio, tensao_alta, terror_psicologico
+O Farol;2019;terror;sombria, reflexiva;psicologica, misterio;lento;não;construcao_lenta, psicologico, reflexivo, sem_reviravolta, sombrio, terror_psicologico
+Toy Story;1995;animacao;leve, emocional;aventura, emocional;rapido;não;acolhedor, animacao_aventura, animacao_emocional, aventura, emocional, ritmo_intenso, sem_reviravolta
+Toy Story 3;2010;animacao;emocional, tensa;aventura, emocional;moderado;não;animacao_aventura, animacao_emocional, aventura, emocional, sem_reviravolta, tensao_alta
+Up: Altas Aventuras;2009;animacao;emocional, fantastica;aventura, emocional;moderado;não;animacao_aventura, animacao_emocional, animacao_fantasia, aventura, emocional, fantasia, sem_reviravolta
+Encanto;2021;animacao;fantastica, emocional;emocional, aventura;moderado;não;animacao_aventura, animacao_emocional, animacao_fantasia, aventura, emocional, fantasia, sem_reviravolta
+Luca;2021;animacao;leve, fantastica;aventura, emocional;moderado;não;acolhedor, animacao_aventura, animacao_fantasia, aventura, fantasia, sem_reviravolta
+O Menino e a Garça;2023;animacao;fantastica, reflexiva;filosofica, aventura;lento;não;animacao_aventura, animacao_fantasia, aventura, construcao_lenta, fantasia, filosofico, reflexivo, sem_reviravolta
+O Serviço de Entregas da Kiki;1989;animacao;fantastica, leve;aventura, emocional;moderado;não;acolhedor, animacao_aventura, animacao_fantasia, aventura, fantasia, sem_reviravolta
+Klaus;2019;animacao;leve, emocional;aventura, emocional;moderado;não;acolhedor, animacao_aventura, animacao_emocional, aventura, emocional, sem_reviravolta
+Contato;1997;ficcao_cientifica;reflexiva, emocional;filosofica, misterio;lento;não;construcao_lenta, emocional, ficcao_filosofica, filosofico, reflexivo, sem_reviravolta
+Perdido em Marte;2015;ficcao_cientifica;leve, reflexiva;aventura, emocional;rapido;não;aventura, ficcao_aventura, ficcao_tecnologia, reflexivo, ritmo_intenso, sem_reviravolta
+A Origem;2010;ficcao_cientifica;tensa, reflexiva;filosofica, misterio;rapido;sim;ficcao_filosofica, ficcao_tecnologia, filosofico, reflexivo, reviravolta, ritmo_intenso, tensao_alta
+Planeta dos Macacos: A Origem;2011;ficcao_cientifica;tensa, emocional;aventura, critica_social;moderado;não;aventura, critica_social, emocional, ficcao_aventura, ficcao_tecnologia, sem_reviravolta, tensao_alta
+Jogador Nº 1;2018;ficcao_cientifica;leve, fantastica;aventura, critica_social;rapido;não;aventura, critica_social, ficcao_aventura, ficcao_tecnologia, ritmo_intenso, sem_reviravolta
+O Predestinado;2014;ficcao_cientifica;sombria, reflexiva;filosofica, misterio;moderado;sim;ficcao_filosofica, ficcao_tecnologia, filosofico, reflexivo, reviravolta, sombrio
+Gattaca: Experiência Genética;1997;ficcao_cientifica;reflexiva, tensa;filosofica, critica_social;lento;não;construcao_lenta, critica_social, ficcao_filosofica, ficcao_tecnologia, filosofico, reflexivo, sem_reviravolta, tensao_alta
+Minority Report: A Nova Lei;2002;ficcao_cientifica;tensa, reflexiva;investigacao, filosofica;rapido;sim;ficcao_filosofica, ficcao_tecnologia, filosofico, investigativo, reflexivo, reviravolta, ritmo_intenso, tensao_alta
+Histórias Cruzadas;2011;drama;emocional, reflexiva;critica_social, emocional;moderado;não;critica_social, drama_critica_social, drama_relacoes, emocional, reflexivo, sem_reviravolta
+Intocáveis;2011;drama;leve, emocional;emocional;moderado;não;drama_relacoes, drama_superacao, emocional, sem_reviravolta
+Sempre ao Seu Lado;2009;drama;emocional, reflexiva;emocional;lento;não;construcao_lenta, drama_relacoes, emocional, reflexivo, sem_reviravolta
+Estrelas Além do Tempo;2016;drama;emocional, reflexiva;critica_social, emocional;moderado;não;critica_social, drama_critica_social, drama_superacao, emocional, reflexivo, sem_reviravolta
+Lion: Uma Jornada para Casa;2016;drama;emocional, reflexiva;emocional, aventura;moderado;não;aventura, drama_relacoes, drama_superacao, emocional, reflexivo, sem_reviravolta
+Billy Elliot;2000;drama;emocional, leve;emocional, critica_social;moderado;não;critica_social, drama_relacoes, drama_superacao, emocional, sem_reviravolta
+O Terminal;2004;drama;leve, emocional;emocional, critica_social;moderado;não;critica_social, drama_relacoes, drama_superacao, emocional, sem_reviravolta
+O Óleo de Lorenzo;1992;drama;emocional, reflexiva;emocional;moderado;não;drama_relacoes, drama_superacao, emocional, reflexivo, sem_reviravolta
+O Grande Hotel Budapeste;2014;comedia;leve, reflexiva;critica_social, aventura;rapido;não;aventura, comedia_leve, comedia_social, critica_social, humor, reflexivo, ritmo_intenso, sem_reviravolta
+Curtindo a Vida Adoidado;1986;comedia;leve, emocional;aventura, emocional;rapido;não;aventura, comedia_emocional, comedia_leve, emocional, humor, ritmo_intenso, sem_reviravolta
+Barbie;2023;comedia;leve, reflexiva;critica_social, aventura;moderado;não;aventura, comedia_leve, comedia_social, critica_social, humor, reflexivo, sem_reviravolta
+Legalmente Loira;2001;comedia;leve, emocional;emocional, critica_social;rapido;não;comedia_emocional, comedia_leve, critica_social, emocional, humor, ritmo_intenso, sem_reviravolta
+Um Senhor Estagiário;2015;comedia;leve, emocional;emocional;moderado;não;comedia_emocional, comedia_leve, emocional, humor, sem_reviravolta
+Chef;2014;comedia;leve, emocional;emocional, aventura;moderado;não;aventura, comedia_emocional, comedia_leve, emocional, humor, sem_reviravolta
+O Mentiroso;1997;comedia;leve, emocional;emocional;rapido;não;comedia_emocional, comedia_leve, emocional, humor, ritmo_intenso, sem_reviravolta
+De Repente 30;2004;comedia;leve, emocional;emocional;moderado;não;comedia_emocional, comedia_leve, emocional, humor, sem_reviravolta
