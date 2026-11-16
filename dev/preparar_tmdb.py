@@ -28,19 +28,39 @@ def norm(s):
     s=unicodedata.normalize('NFD',str(s or ''))
     return re.sub(r'[^a-z0-9]+',' ',''.join(c for c in s if unicodedata.category(c)!='Mn').lower()).strip()
 
+def titles_of(f):
+    return {norm(f['titulo']),norm(f.get('busca_tmdb',''))}-{''}
+
+def year_of(item):
+    try:return int((item.get('release_date') or '0000')[:4])
+    except ValueError:return 0
+
 def choose(results,f):
-    # não associa dois filmes com títulos/anos ambíguos
-    titles={norm(f['titulo']),norm(f.get('busca_tmdb',''))}-{''}
-    year=int(f['ano']); ranked=[]
-    for item in results:
-        y=int((item.get('release_date') or '0000')[:4])
-        name={norm(item.get('title')),norm(item.get('original_title'))}
-        match=bool(titles & name)
-        if match and abs(y-year)<=1:ranked.append(item)
-    return ranked[0] if len(ranked)==1 else None
+    """Escolhe o resultado da busca. Retorna (item, motivo_da_recusa).
+    Títulos comuns ("Dune", "The Gift", "Split") devolvem vários resultados; antes o script
+    desistia sempre que havia mais de um. Agora: título igual e ano ±1; havendo empate,
+    prefere o ano exato e, depois, o filme claramente mais conhecido (3x mais votos)."""
+    titles=titles_of(f);year=int(f['ano'])
+    ranked=[i for i in results if titles & {norm(i.get('title')),norm(i.get('original_title'))} and abs(year_of(i)-year)<=1]
+    if not ranked:return None,'nenhum resultado com o mesmo título e ano'
+    if len(ranked)>1:
+        exact=[i for i in ranked if year_of(i)==year]
+        if exact:ranked=exact
+    if len(ranked)>1:
+        ranked.sort(key=lambda i:i.get('vote_count') or 0,reverse=True)
+        a,b=(ranked[0].get('vote_count') or 0),(ranked[1].get('vote_count') or 0)
+        if a<3*max(b,1):
+            return None,'ambíguo: '+'; '.join(f"{i.get('title')} ({year_of(i)}, id {i.get('id')})" for i in ranked[:3])
+    return ranked[0],''
+
+def confirm(info,f):
+    """Confere se um tmdb_id gravado em dados.js corresponde mesmo ao filme (evita capa errada)."""
+    same_title=bool(titles_of(f) & {norm(info.get('title')),norm(info.get('original_title'))})
+    return same_title and abs(year_of(info)-int(f['ano']))<=1
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--env',help='Caminho do .env anterior (mantido fora do site)');p.add_argument('--limite',type=int,default=0,help='Limita quantidade para teste; 0 significa todo catálogo')
+    p.add_argument('--atualizar',action='store_true',help='Busca de novo também os filmes que já têm capa e metadados')
     a=p.parse_args();token=token_from(a.env)
     prefix='const CINE_DATA = '
     txt=(ROOT/'dados.js').read_text(encoding='utf-8').strip()
@@ -55,17 +75,30 @@ def main():
             try:existing=json.loads(current.removeprefix('const CINE_METADATA = ').rstrip(';'))
             except json.JSONDecodeError:pass
     ok=0;notfound=[];errors=[]
+    skipped=0
     for i,f in enumerate(films,1):
         try:
-            tmdb_id=f.get('tmdb_id') or existing.get(f['id'],{}).get('tmdb_id')
+            # Por padrão, só processa o que falta: filmes sem metadados ou sem o arquivo da capa.
+            if not a.atualizar and existing.get(f['id'],{}).get('poster') and (target/(f['id']+'.jpg')).exists():
+                skipped+=1;continue
+            fixed=f.get('tmdb_id')
+            tmdb_id=fixed or existing.get(f['id'],{}).get('tmdb_id')
             if not tmdb_id:
-                query=urllib.parse.urlencode({'query':f.get('busca_tmdb') or f['titulo'],'language':'pt-BR','include_adult':'false'})
-                search=get_json('https://api.themoviedb.org/3/search/movie?'+query,token)
-                found=choose(search.get('results',[]),f)
+                found=None;why=''
+                for q in dict.fromkeys([f.get('busca_tmdb'),f['titulo']]):
+                    if not q:continue
+                    query=urllib.parse.urlencode({'query':q,'language':'pt-BR','include_adult':'false','year':f['ano']})
+                    found,why=choose(get_json('https://api.themoviedb.org/3/search/movie?'+query,token).get('results',[]),f)
+                    if not found:
+                        query=urllib.parse.urlencode({'query':q,'language':'pt-BR','include_adult':'false'})
+                        found,why=choose(get_json('https://api.themoviedb.org/3/search/movie?'+query,token).get('results',[]),f)
+                    if found:break
                 if not found:
-                    notfound.append(f['titulo']);continue
+                    notfound.append(f"{f['titulo']} ({f['ano']}): {why}");continue
                 tmdb_id=found['id']
             info=get_json('https://api.themoviedb.org/3/movie/'+str(tmdb_id)+'?language=pt-BR&append_to_response=credits',token)
+            if fixed and not confirm(info,f):
+                notfound.append(f"{f['titulo']} ({f['ano']}): o tmdb_id {tmdb_id} em dados.js é \"{info.get('title')}\" ({year_of(info)}) — confira o id");continue
             poster_path=info.get('poster_path')
             if not poster_path or not re.fullmatch(r'/[a-zA-Z0-9_-]+\.(jpg|png)',poster_path):
                 notfound.append(f['titulo']+' (sem pôster)');continue
@@ -82,8 +115,10 @@ def main():
         except (urllib.error.URLError,RuntimeError,ValueError,TimeoutError) as e:errors.append((f['titulo'],str(e)))
         if i%10==0:print(f'Processados {i}/{len(films)}...')
     metapath.write_text('const CINE_METADATA = '+json.dumps(existing,ensure_ascii=False,separators=(',',':'))+';\n',encoding='utf-8')
-    print(f'Concluído: {ok} filmes com metadados, {len(notfound)} não associados, {len(errors)} erros.')
-    if notfound: print('Não associados (revisão manual): '+', '.join(notfound[:30]))
+    print(f'Concluído: {ok} filmes atualizados, {skipped} já estavam completos, {len(notfound)} não associados, {len(errors)} erros.')
+    if notfound:
+        print('Não associados (revisão manual — grave o tmdb_id certo em dados.js):')
+        for x in notfound:print('  - '+x)
     if errors:print('Erros: '+str(errors[:5]))
-    print('Republique a pasta inteira no Netlify. Não publique seu .env nem o token.')
+    print('Depois faça commit de capas/ e metadados.js. Nunca publique seu .env nem o token.')
 if __name__=='__main__':main()
