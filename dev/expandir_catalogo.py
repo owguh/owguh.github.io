@@ -92,6 +92,16 @@ def classificar(gen,info,kws):
      'romance':{'romance_leve':2 if 35 in G else 0,'romance_drama':2 if 18 in G else 0,'romance_classico':3 if int((info.get('release_date') or '9999')[:4])<=1999 else 0},
     }[gen]
     perfil=max(cand,key=cand.get) if max(cand.values())>0 else None
+    if not perfil:
+        # Sem sinal nas palavras-chave: subgênero mais provável pelos gêneros do TMDB.
+        perfil={
+         'animacao':'animacao_emocional' if 18 in G else 'animacao_fantasia' if 14 in G else 'animacao_aventura',
+         'suspense':'suspense_investigativo' if 80 in G else 'suspense_enigmatico',
+         'drama':'drama_critica_social' if (36 in G or 10752 in G) else 'drama_relacoes',
+         'acao':'acao_aventura' if 12 in G else 'acao_perseguicao',
+         'ficcao_cientifica':'ficcao_aventura' if (12 in G or 28 in G) else None,
+         'romance':'romance_drama' if 18 in G else 'romance_leve',
+         'terror':None,'comedia':'comedia_leve'}[gen]
 
     # Atmosfera
     atm=[]
@@ -99,7 +109,7 @@ def classificar(gen,info,kws):
     if 27 in G or 80 in G or s['sombria']>=2:atm.append('sombria')
     if 35 in G or 10751 in G:atm.append('leve')
     if 18 in G or 10749 in G or s['emocional']:atm.append('emocional')
-    if s['reflexiva'] or s['filosofica'] or s['critica_social']>=2:atm.append('reflexiva')
+    if s['reflexiva']>=(1 if gen in ('ficcao_cientifica','drama') else 2) or s['critica_social']>=2:atm.append('reflexiva')
     if 14 in G or (878 in G and s['espaco']) or (gen=='animacao' and s['fantasia']):atm.append('fantastica')
     atm=[a for a in dict.fromkeys(atm) if a in ATM_G[gen]][:2] or PADRAO[gen][0]
 
@@ -108,7 +118,8 @@ def classificar(gen,info,kws):
     if s['investigacao'] or 80 in G:nar.append('investigacao')
     if s['misterio'] or 9648 in G:nar.append('misterio')
     if s['psicologica']:nar.append('psicologica')
-    if s['filosofica']:nar.append('filosofica')
+    # "filosófica" exige dois sinais fora de ficção científica e drama (evita Toy Story "filosófico" por uma palavra)
+    if s['filosofica']>=(1 if gen in ('ficcao_cientifica','drama') else 2):nar.append('filosofica')
     if s['critica_social']>=1 and (gen in ('drama','comedia') or s['critica_social']>=2):nar.append('critica_social')
     if s['aventura'] or 12 in G or s['espaco']:nar.append('aventura')
     if s['emocional'] or 18 in G:nar.append('emocional')
