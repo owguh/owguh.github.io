@@ -56,3 +56,27 @@ Após publicar, teste em janela privada. O PWA usa uma nova chave de cache 4.3; 
 
 ### Limitações
 As classificações dos novos filmes são editoriais preliminares, não equivalem a avaliação de usuários. As sinopses e os pôsteres não são obtidos automaticamente no navegador, para preservar a chave do TMDB e a possibilidade de operar offline. Os materiais e imagens provenientes do TMDB pertencem aos respectivos titulares. Este produto utiliza a API TMDB, mas não é endossado nem certificado pelo TMDB.
+
+## Expandir o catálogo para 1.000 filmes (classificação automática)
+O script `dev/expandir_catalogo.py` busca no TMDB os filmes mais votados de cada gênero até o catálogo chegar ao tamanho pedido, repartido igualmente entre os 8 gêneros. Os filmes curados à mão não são alterados.
+
+Cada filme novo recebe uma **classificação automática** (atmosfera, narrativa, ritmo, reviravolta e subgênero), gerada a partir dos gêneros e das palavras-chave do TMDB. As etiquetas das regras R01–R45 saem dessa classificação, como nos filmes curados. Os novos entram como `preliminar`, com `"origem": "automatica"`, e a ficha avisa que a classificação é automática. "Clássico" automático = lançado há 20+ anos, nota ≥ 7,8 e 3.000+ votos.
+
+```powershell
+# 1. Primeiro, complete as capas que faltam nos filmes atuais
+uv run --no-project python dev/preparar_tmdb.py --env "C:\caminho\para\backend\.env"
+
+# 2. Veja o que seria adicionado, sem gravar nada
+uv run --no-project python dev/expandir_catalogo.py --env "C:\caminho\para\backend\.env" --simular
+
+# 3. Expanda de verdade (leva alguns minutos: ~850 consultas e 800 capas)
+uv run --no-project python dev/expandir_catalogo.py --env "C:\caminho\para\backend\.env" --total 1000
+
+# 4. Valide e teste
+node dev/testes_catalogo.cjs
+node dev/testes_4_4.cjs
+```
+
+O script grava `dados.js`, `metadados.js`, as capas em `capas/` (tamanho w185, cerca de 14 KB cada, ~11 MB no total) e um relatório em `dev/expansao_relatorio.csv` com a classificação de cada filme. Depois é só fazer commit e push.
+
+Opções: `--total N` define o tamanho final; `--votos-minimos N` ignora filmes pouco votados (padrão 300). Para desfazer a expansão antes do commit, use `git checkout dados.js metadados.js` e `git clean -f capas/`.
