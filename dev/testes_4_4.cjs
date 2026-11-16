@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
-const dir=__dirname,ctx=vm.createContext({console,document:{querySelector:()=>({})}});
+const dir=path.join(__dirname,'..'),ctx=vm.createContext({console,document:{querySelector:()=>({})}});
 for(const name of ['dados.js','metadados.js','motor.js'])vm.runInContext(fs.readFileSync(path.join(dir,name),'utf8'),ctx,{filename:name});
 const D=vm.runInContext('CINE_DATA',ctx),E=vm.runInContext('CINE_ENGINE',ctx);
 const films=JSON.parse(JSON.stringify(D.filmes));

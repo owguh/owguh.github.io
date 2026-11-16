@@ -1,7 +1,7 @@
 /* Execute: node testes_local.cjs -- verifica lógica e mede dados sintéticos */
 'use strict';
 const fs=require('fs'),vm=require('vm'),assert=require('assert').strict, path=require('path'),{performance}=require('perf_hooks');
-const dir=__dirname;
+const dir=path.join(__dirname,'..');
 const ctx=vm.createContext({performance,console,module:{exports:{}}});
 for(const file of ['dados.js','motor.js','teste_escala.js']) vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),ctx,{filename:file});
 const D=vm.runInContext('CINE_DATA',ctx),E=vm.runInContext('CINE_ENGINE',ctx),B=vm.runInContext('CINE_BENCHMARK',ctx);
@@ -32,4 +32,4 @@ for(const n of [1000,5000,10000]){
 }
 console.log('TESTES LOGICOS APROVADOS: 200 filmes, 70 regras, épocas, clássicos, filtros e ranking.');
 console.table(benchmark);
-fs.writeFileSync(path.join(dir,'RESULTADOS_TESTE_NODE.json'),JSON.stringify({ambiente:'Node '+process.version,info:'Dados sintéticos gerados a partir dos 124 registros classificados. Mediana de 5 rodadas, não mede telefone nem qualidade cinematográfica.',benchmark},null,2));
+fs.writeFileSync(path.join(__dirname,'RESULTADOS_TESTE_NODE.json'),JSON.stringify({ambiente:'Node '+process.version,info:'Dados sintéticos gerados a partir dos 124 registros classificados. Mediana de 5 rodadas, não mede telefone nem qualidade cinematográfica.',benchmark},null,2));

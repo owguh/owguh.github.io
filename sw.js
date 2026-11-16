@@ -1,5 +1,5 @@
-const CACHE='cineexpert-mobile-v4.5';
-const ASSETS = ['./', './index.html','./estilo.css?v=450','./dados.js?v=450','./metadados.js?v=450','./motor.js?v=450','./teste_escala.js?v=450','./aplicativo.js?v=450','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE='cineexpert-mobile-v4.6';
+const ASSETS = ['./', './index.html','./estilo.css?v=460','./dados.js?v=460','./metadados.js?v=460','./motor.js?v=460','./teste_escala.js?v=460','./aplicativo.js?v=460','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener('fetch', event => {

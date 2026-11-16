@@ -85,3 +85,126 @@
 .modetoggle{background:none;border:1px solid #3d2f4d;border-radius:8px;color:#9c8caf;font-size:11px;letter-spacing:.4px;padding:6px 10px}
 .modetoggle:hover{color:var(--text);border-color:var(--line)}
 .modetoggle[aria-pressed="true"]{color:var(--green);border-color:#2f5c4f}
+
+/* ==========================================================================
+   CineExpert 4.6 — paleta com destaque âmbar, legibilidade, cards e catálogo
+   ========================================================================== */
+:root{--accent:#f5b84a;--accent-strong:#ffcf70;--accent-ink:#1e1404;--accent-soft:#3a2c14}
+
+/* Destaque quente só onde importa: ação principal, afinidade e 1ª recomendação */
+.btn.primary{background:linear-gradient(120deg,#ffcf70,#f0a93a);border-color:#f5b84a;color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn:disabled,.btn.primary:disabled{opacity:1;background:#1a1324;color:#77688b;border:1px dashed #3d2f4d;filter:none;cursor:not-allowed}
+.btn.ghost{background:transparent}
+.linkbtn{background:none;border:0;color:#cba8ff;text-decoration:underline;text-underline-offset:3px;font-size:13px;padding:8px 0}
+.stepbar div{background:linear-gradient(90deg,#ac74ff,var(--accent))}
+
+/* Tamanho mínimo de 11 px */
+.identity small,.topinner .identity small{font-size:10.5px;letter-spacing:.9px}
+.status,.topinner .status{font-size:11px}
+footer{font-size:11px;letter-spacing:.6px}
+.profile .kicker{font-size:11px}
+.catalog-tags span{font-size:11px}
+.points small{font-size:11px}
+
+/* Marca: ícone da claquete no lugar do caractere genérico */
+.brandlogo{width:38px;height:38px;border-radius:11px;display:block;flex:0 0 38px}
+@media(max-width:710px){.brandlogo{width:34px;height:34px;flex-basis:34px}}
+
+/* Home: colagem de pôsteres no desktop */
+.home{display:grid;grid-template-columns:minmax(0,1fr);align-items:center}
+.collage{display:none}
+@media(min-width:960px){
+ .home{grid-template-columns:minmax(0,1fr) 330px;gap:20px}
+ .collage{display:block;position:relative;height:470px;margin-top:40px}
+ .collage img{position:absolute;width:150px;aspect-ratio:2/3;object-fit:cover;border-radius:12px;box-shadow:0 18px 40px #0009;border:1px solid #ffffff1a}
+ .collage .c0{left:0;top:20px;transform:rotate(-7deg)}
+ .collage .c1{left:165px;top:0;transform:rotate(5deg)}
+ .collage .c2{left:20px;top:250px;transform:rotate(4deg);opacity:.85}
+ .collage .c3{left:180px;top:240px;transform:rotate(-5deg);opacity:.85}
+ .collage .c4,.collage .c5{display:none}
+ .collage{-webkit-mask-image:linear-gradient(#000 70%,transparent);mask-image:linear-gradient(#000 70%,transparent)}
+}
+
+/* Quiz */
+.choice{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:4px}
+.choice-main{display:flex;align-items:center;gap:10px}
+.choice .ico{font-size:22px;line-height:1}
+.choice .ex{font-size:12px;font-weight:500;color:#a99abf;line-height:1.35}
+.choice.any{border-style:dashed;background:transparent}
+.choice.any[aria-pressed="true"]{background:#503076;border-style:solid}
+.choice[aria-pressed="true"] .ex{color:#e2d2f5}
+
+/* Resultados: lista vertical com pôster inteiro (2:3) */
+.profile{align-items:flex-start}
+.profile-main{min-width:0}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0 6px}
+.chip{background:#2e1f40;border:1px solid #634585;color:#ecdcff;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:600}
+.chip:hover{border-color:#ba8bff;background:#3a2752}
+.chip:after{content:" ✎";opacity:.55;font-size:11px}
+.recommend-grid,.recommend-grid{grid-template-columns:minmax(0,1fr);gap:16px}
+.movie,.recommend-grid .movie{display:grid;grid-template-columns:150px minmax(0,1fr);align-items:start}
+.mc-art,.ci-art{position:relative;aspect-ratio:2/3;background:radial-gradient(circle at 70% 30%,#6b4c94,#2a1d3d 60%,#1a1226);overflow:hidden;display:flex;align-items:flex-end}
+.mc-art img,.ci-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.art-title{position:relative;padding:12px;font-weight:800;font-size:16px;line-height:1.15;color:#f2e6ff}
+.mc-art{margin:16px 0 16px 16px;border-radius:12px;border:1px solid #ffffff14}
+.moviebody{padding:16px 18px 18px}
+.rank{color:#c28cff}
+.rank.first{color:var(--accent)}
+.movietitle{margin:8px 0 6px}
+.movietitle h3{font-size:clamp(19px,2.4vw,24px)}
+.points{background:var(--accent-soft);border-color:#8a6a2c;color:var(--accent-strong)}
+.points small{color:#e8cf9c}
+.moviemeta{font-size:13px;line-height:1.5}
+.match{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;font-weight:700;color:#f3e7c9}
+.matchbar{flex:0 0 90px;height:7px;border-radius:9px;background:#33263f;overflow:hidden}
+.matchbar div{height:100%;background:linear-gradient(90deg,#f0a93a,#ffcf70);border-radius:9px}
+.miss{margin-top:6px;font-size:12.5px;color:#f5c26b}
+.details ul.checks{list-style:none;padding-left:0}
+.checks li{padding-left:24px;position:relative;margin:3px 0}
+.checks li:before{position:absolute;left:0;top:0;font-weight:900}
+.checks li.ok:before{content:"✓";color:var(--green)}
+.checks li.no{color:#e6c9a0}.checks li.no:before{content:"✗";color:#f5a35c}
+.card-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.card-actions .card-open{margin-top:0;width:auto;flex:1 1 auto}
+.card-actions .seen-btn{flex:0 0 auto;font-weight:600;color:var(--muted)}
+.more-row{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin:18px 0 0}
+@media(max-width:710px){
+ .movie,.recommend-grid .movie{grid-template-columns:104px minmax(0,1fr)}
+ .mc-art{margin:14px 0 14px 14px;border-radius:10px}
+ .moviebody{padding:14px 14px 16px}
+ .art-title{font-size:13px;padding:8px}
+ .matchbar{flex-basis:60px}
+ .profile{flex-direction:column}
+}
+@media(max-width:400px){
+ .movie,.recommend-grid .movie{grid-template-columns:88px minmax(0,1fr)}
+ .card-actions .btn{width:100%}
+}
+
+/* Catálogo: grade de pôsteres */
+.catalog-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.catalog-item{padding:0;overflow:hidden;display:flex;flex-direction:column;border-radius:13px}
+.catalog-item .ci-art{border-bottom:1px solid #ffffff10}
+.ci-body{padding:10px 11px 12px}
+.ci-body h3{font-size:14.5px;margin:5px 0 0;line-height:1.25}
+.ci-body .mini{font-size:12px}
+.cbadges{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.cbadge{font-size:11px;border-radius:6px;padding:3px 7px;background:#39244d;color:#e0c8ff}
+.cbadge.classic{background:var(--accent-soft);color:var(--accent-strong)}
+.cbadge.seen{background:#173a31;color:var(--green)}
+.catalog-empty{grid-column:1/-1}
+@media(max-width:960px){.catalog-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:760px){.catalog-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:540px){.catalog-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.catalog-item{min-height:0}}
+
+/* Ficha */
+.film-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.film-actions a.btn{text-decoration:none;display:inline-flex;align-items:center}
+.film-information .film-actions a{color:var(--text)}
+#film-seen[aria-pressed="true"]{color:var(--green);border-color:#2f5c4f}
+
+/* Aviso flutuante */
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:#2a1f38;border:1px solid #6b4c94;color:var(--text);padding:12px 18px;border-radius:12px;font-size:14px;opacity:0;pointer-events:none;transition:.2s;z-index:50;box-shadow:0 10px 30px #0008}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+#share{white-space:nowrap;flex-shrink:0}

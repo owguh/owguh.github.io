@@ -10,9 +10,9 @@ Esta edição continua o CineExpert 4.3.3 com a correção comprovada da grade d
 
 ## Antes de publicar
 1. Preserve seus metadados reais: copie o `metadados.js` gerado no computador da versão 4.3 e a pasta `capas` para a nova pasta 4.4. O pacote contém apenas a versão de demonstração, não suas imagens baixadas localmente.
-2. Para obter pôsteres novos, execute `uv run --no-project python preparar_tmdb.py --env "CAMINHO_ABSOLUTO_DO_ENV"`. O `.env` deve permanecer FORA da pasta publicada.
+2. Para obter pôsteres novos, execute `uv run --no-project python dev/preparar_tmdb.py --env "CAMINHO_ABSOLUTO_DO_ENV"`. O `.env` deve permanecer FORA da pasta publicada.
 3. Títulos sem correspondência exata de ano/nome no TMDB terão capa alternativa; revise manualmente.
-4. Teste com `node testes_4_4.cjs`, depois inicie `uv run --no-project python -m http.server 5500`.
+4. Teste com `node dev/testes_4_4.cjs`, depois inicie `uv run --no-project python -m http.server 5500`.
 5. Envie somente a pasta pública ao Netlify. Nunca envie `.env`, `env/` ou tokens. Para maior segurança, remova scripts Python e CSVs da pasta antes da publicação, se não forem necessários.
 
 ## Limitações

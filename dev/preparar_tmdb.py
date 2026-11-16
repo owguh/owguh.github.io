@@ -2,7 +2,7 @@
 Credenciais nunca são escritas nos arquivos publicados. Requer conexão somente na preparação.
 """
 import argparse,json,os,re,unicodedata,urllib.request,urllib.parse,urllib.error,time,pathlib
-ROOT=pathlib.Path(__file__).resolve().parent
+ROOT=pathlib.Path(__file__).resolve().parent.parent  # raiz do site (este script fica em dev/)
 
 def token_from(path):
     token=os.getenv('TMDB_BEARER_TOKEN','').strip()
