@@ -9,7 +9,7 @@ const q=()=>JSON.parse(vm.runInContext('JSON.stringify(questions())',ctx));
 const set=(k,v)=>vm.runInContext(`setAnswer(${JSON.stringify(k)},${JSON.stringify(v)})`,ctx);
 const opts=key=>q().find(x=>x.key===key)?.opts.map(x=>x[1]);
 const D=vm.runInContext('CINE_DATA',ctx),E=vm.runInContext('CINE_ENGINE',ctx);
-assert.equal(D.filmes.length,200);assert.equal(D.regras.length,45);assert.equal(D.perfis.length,25);
+assert.equal(D.filmes.filter(f=>f.origem!=='automatica').length,200);assert(D.filmes.length>=200);assert.equal(D.regras.length,45);assert.equal(D.perfis.length,25);
 for(const genre of ['acao','romance']){
  set('genero',genre);
  assert(q().some(x=>x.key==='foco'),'subgênero deve existir');
@@ -27,4 +27,4 @@ assert(!opts('atmosfera').includes('sombria'));assert(!opts('atmosfera').include
 assert(!opts('narrativa').includes('misterio'));
 assert(fs.readFileSync(path.join(dir,'index.html'),'utf8').includes('metadados.js'));
 assert(js.includes('renderFilm()')&&js.includes('openFilm(el.dataset.film'));
-console.log('TESTES 4.3 APROVADOS: 200 filmes, 70 regras, Ação, Romance, comédia adaptativa e fichas.');
+console.log(`TESTES 4.3 APROVADOS: ${D.filmes.length} filmes,`+' 70 regras, Ação, Romance, comédia adaptativa e fichas.');

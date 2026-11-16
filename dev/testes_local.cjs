@@ -5,8 +5,8 @@ const dir=path.join(__dirname,'..');
 const ctx=vm.createContext({performance,console,module:{exports:{}}});
 for(const file of ['dados.js','motor.js','teste_escala.js']) vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),ctx,{filename:file});
 const D=vm.runInContext('CINE_DATA',ctx),E=vm.runInContext('CINE_ENGINE',ctx),B=vm.runInContext('CINE_BENCHMARK',ctx);
-assert.equal(D.filmes.length,200);assert.equal(D.regras.length,45);assert.equal(D.perfis.length,25);
-assert.equal(new Set(D.filmes.map(m=>m.id)).size,200);
+assert.equal(D.filmes.filter(f=>f.origem!=='automatica').length,200);assert(D.filmes.length>=200);assert.equal(D.regras.length,45);assert.equal(D.perfis.length,25);
+assert.equal(new Set(D.filmes.map(m=>m.id)).size,D.filmes.length);
 const pref={genero:'terror',foco:'sobrenatural',atmosfera:'tensa',narrativa:'misterio',ritmo:'moderado',reviravolta:'indiferente'};
 assert.equal(E.correspondeEpoca(D.filmes.find(x=>x.id==='o-iluminado'),'antigo'),true);
 assert.equal(E.correspondeEpoca(D.filmes.find(x=>x.id==='chihiro'),'classico'),true);
@@ -30,6 +30,6 @@ for(const n of [1000,5000,10000]){
  const med=k=>samples.map(x=>x[k]).sort((a,b)=>a-b)[2];
  benchmark.push({registros:n,gerar_ms:med('geracao').toFixed(2),busca_ms:med('busca').toFixed(2),inferir_ms:med('inferencia').toFixed(2),html24_ms:med('render24').toFixed(2),candidatos:samples[0].candidatos});
 }
-console.log('TESTES LOGICOS APROVADOS: 200 filmes, 70 regras, épocas, clássicos, filtros e ranking.');
+console.log(`TESTES LOGICOS APROVADOS: ${D.filmes.length} filmes,`+' 70 regras, épocas, clássicos, filtros e ranking.');
 console.table(benchmark);
 fs.writeFileSync(path.join(__dirname,'RESULTADOS_TESTE_NODE.json'),JSON.stringify({ambiente:'Node '+process.version,info:'Dados sintéticos gerados a partir dos 124 registros classificados. Mediana de 5 rodadas, não mede telefone nem qualidade cinematográfica.',benchmark},null,2));
