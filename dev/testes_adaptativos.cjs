@@ -1,6 +1,6 @@
 'use strict';
 const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict'),path=require('path');
-const p=__dirname;
+const p=path.join(__dirname,'..');
 const js=fs.readFileSync(path.join(p,'aplicativo.js'),'utf8');
 const prefix=js.slice(0,js.indexOf('function renderIntro()'));
 const ctx=vm.createContext({document:{querySelector:()=>({})},console});

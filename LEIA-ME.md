@@ -17,7 +17,7 @@ uv run --no-project python -m http.server 5500
 
 Abra http://127.0.0.1:5500/.
 
-Testes: `node testes_local.cjs`, `node testes_adaptativos.cjs` e `node testes_4_3.cjs`.
+Testes: `node dev/testes_local.cjs`, `node dev/testes_adaptativos.cjs` e `node dev/testes_4_3.cjs`.
 
 ## Gerar pôsteres e dados do TMDB antes de publicar
 A versão PWA é estática; não coloque `TMDB_BEARER_TOKEN` em arquivos JavaScript ou no Netlify.
@@ -26,13 +26,13 @@ A versão PWA é estática; não coloque `TMDB_BEARER_TOKEN` em arquivos JavaScr
 2. No terminal, execute (adapte o caminho):
 
 ```powershell
-uv run --no-project python preparar_tmdb.py --env "C:\caminho\para\CineExpert_3.7_Versionamento\backend\.env"
+uv run --no-project python dev/preparar_tmdb.py --env "C:\caminho\para\CineExpert_3.7_Versionamento\backend\.env"
 ```
 
 Para testar só 5 filmes:
 
 ```powershell
-uv run --no-project python preparar_tmdb.py --env "C:\caminho\para\backend\.env" --limite 5
+uv run --no-project python dev/preparar_tmdb.py --env "C:\caminho\para\backend\.env" --limite 5
 ```
 
 3. O script consulta o TMDB, valida correspondência por título e ano, cria capas em `capas/` e grava metadados públicos em `metadados.js`.
