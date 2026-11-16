@@ -55,8 +55,11 @@ def choose(results,f):
 
 def confirm(info,f):
     """Confere se um tmdb_id gravado em dados.js corresponde mesmo ao filme (evita capa errada)."""
+    # O TMDB às vezes registra o ano do lançamento comercial nos EUA, não o da estreia
+    # (ex.: Atividade Paranormal 2007→2009, A Morte do Demônio 1981→1983). Com o título
+    # conferido, aceitamos até 3 anos de diferença.
     same_title=bool(titles_of(f) & {norm(info.get('title')),norm(info.get('original_title'))})
-    return same_title and abs(year_of(info)-int(f['ano']))<=1
+    return same_title and abs(year_of(info)-int(f['ano']))<=3
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('--env',help='Caminho do .env anterior (mantido fora do site)');p.add_argument('--limite',type=int,default=0,help='Limita quantidade para teste; 0 significa todo catálogo')
