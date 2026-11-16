@@ -70,3 +70,18 @@
 .card-open{margin-top:14px;width:100%}
 .film-page{max-width:900px;margin:auto}.film-hero{display:grid;grid-template-columns:minmax(150px,270px) 1fr;gap:30px;margin:24px 0}.film-art{min-height:350px;background:linear-gradient(145deg,#352044,#15101e);border:1px solid var(--line);border-radius:17px;overflow:hidden}.film-poster{width:100%;height:100%;object-fit:cover;display:block}.film-fallback{min-height:350px;display:grid;place-items:center;text-align:center;padding:20px;color:var(--muted)}.film-information h1{font-size:clamp(30px,5vw,51px);line-height:1.07}.film-information p{line-height:1.7}.film-information a{color:#d5abff}.film-synopsis{font-size:16px;color:#d7c7e5}.film-page .panel{margin:20px 0}.film-page .catalog-tags{margin-top:20px}
 @media(max-width:650px){.film-hero{grid-template-columns:1fr;gap:16px}.film-art{min-height:0;max-width:240px;aspect-ratio:2/3}.film-fallback{min-height:0;height:100%}.film-information h1{font-size:32px}.catalog-item{min-height:145px}}
+
+/* CineExpert 4.5: época com contagem, filmes fora da época, modo apresentação */
+.choice{display:flex;flex-direction:column;justify-content:center;gap:4px}
+.choice .count{font-size:12px;font-weight:600;color:var(--muted)}
+.choice .count.few{color:#f5c26b}
+.choice .count.none{color:#9c8caf}
+.choice:disabled{opacity:.45;cursor:not-allowed;border-style:dashed}
+.choice:disabled:hover{filter:none}
+.badge-out{display:inline-block;margin-top:8px;padding:4px 9px;border-radius:8px;border:1px solid #8a6a2c;background:#3a2c14;color:#f5c26b;font-size:11px;font-weight:750;letter-spacing:.3px}
+.movie-extra{border-style:dashed;border-color:#6b5537}
+.note.limited{border-left:3px solid #f5c26b;padding:10px 14px;background:#231a12;border-radius:0 10px 10px 0;color:#e8d6b8}
+.footer-meta{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.modetoggle{background:none;border:1px solid #3d2f4d;border-radius:8px;color:#9c8caf;font-size:11px;letter-spacing:.4px;padding:6px 10px}
+.modetoggle:hover{color:var(--text);border-color:var(--line)}
+.modetoggle[aria-pressed="true"]{color:var(--green);border-color:#2f5c4f}
