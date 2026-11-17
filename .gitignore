@@ -1,0 +1,8 @@
+# Credenciais: nunca publicar (o GitHub Pages serve tudo o que está no repositório)
+env/
+.env
+*.env
+
+# Arquivos locais
+__pycache__/
+.venv/
