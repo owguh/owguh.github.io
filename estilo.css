@@ -361,3 +361,20 @@ main,footer{padding-bottom:40px}
 body[data-view="intro"] .ta-cta{display:none}
 @media (max-width:399px){.ta-link span{display:none}.ta-link{width:40px;padding:0;justify-content:center}}
 @media (max-width:359px){.hh-text .actions{grid-template-columns:1fr}}
+
+/* Esteiras: setas e arraste no desktop */
+.rail-wrap{position:relative}
+.rail-btn{position:absolute;z-index:2;top:calc(var(--rail-w,136px) * .75 - 22px);width:44px;height:44px;border-radius:50%;display:none;place-items:center;background:#fff;border:1px solid var(--line);box-shadow:var(--shadow-2);color:var(--text);transition:opacity .15s,transform .15s}
+.rail-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.rail-btn.prev{left:-14px}
+.rail-btn.next{right:-14px}
+.rail-btn.next svg{transform:rotate(180deg)}
+.rail-btn:hover{transform:scale(1.06)}
+.rail-btn:disabled{opacity:0;pointer-events:none}
+.rail.dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
+.rail.dragging .pcard{pointer-events:none}
+@media (hover:hover) and (pointer:fine){
+ .rail-wrap.scrollable .rail-btn{display:grid}
+ .rail{cursor:grab}
+}
+@media (min-width:720px){.rail-wrap{--rail-w:158px}}
