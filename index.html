@@ -3,23 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#110c22" />
-  <meta name="description" content="CineExpert: Sistema Especialista de Recomendação Cinematográfica. Edição móvel acadêmica, sem servidor." />
+  <meta name="theme-color" content="#ffffff" />
+  <meta name="description" content="CineExpert: sistema especialista que recomenda filmes para o seu momento, com o motivo de cada escolha. Funciona sem internet." />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/png" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="estilo.css?v=470" />
-  <title>CineExpert • O filme certo no seu momento</title>
+  <link rel="preload" href="fontes/plus-jakarta-sans-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="stylesheet" href="estilo.css?v=500" />
+  <title>CineExpert · O filme certo para esta noite</title>
 </head>
 <body>
+  <a class="skip" href="#app">Ir para o conteúdo</a>
   <header class="topbar">
-   <div class="topinner"><div class="identity"><img class="brandlogo" src="icons/icon-192.png" alt="" width="38" height="38"><div><strong>CINE<span>EXPERT</span></strong><small>SEU CINEMA. SUA ESCOLHA.</small></div></div><span class="status" id="net-status">◉ Funciona offline</span></div>
+    <div class="topinner">
+      <button type="button" class="wordmark" id="wordmark" aria-label="CineExpert, página inicial"><img src="icons/icon-192.png" alt="" width="30" height="30">CineExpert</button>
+      <nav class="topnav" id="topnav" aria-label="Principal"></nav>
+      <span class="status" id="net-status" hidden></span>
+    </div>
   </header>
   <main id="app" aria-live="polite"></main>
-  <footer><span id="footer-info">Dados e imagens: TMDB · Este produto usa a API do TMDB, mas não é endossado pelo TMDB.</span><span id="footer-meta" class="footer-meta"></span></footer>
-  <script src="dados.js?v=470"></script>
-  <script src="metadados.js?v=470"></script>
-  <script src="motor.js?v=470"></script>
-    <script src="aplicativo.js?v=470"></script>
+  <footer><span id="footer-info">Dados e imagens: TMDB. Este produto usa a API do TMDB, mas não é endossado pelo TMDB.</span><span id="footer-meta" class="footer-meta"></span></footer>
+  <nav class="tabbar" id="tabbar" aria-label="Navegação"></nav>
+  <script src="dados.js?v=500"></script>
+  <script src="metadados.js?v=500"></script>
+  <script src="motor.js?v=500"></script>
+  <script src="aplicativo.js?v=500"></script>
 </body>
 </html>
