@@ -255,6 +255,8 @@ const ICON={
  grid:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="9" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="9" rx="1.5"/><path d="M4 17h6.5M13.5 17H20M4 20.5h6.5M13.5 20.5H20"/></svg>',
  search:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
  check:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+ moon:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg>',
+ sun:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>',
  star:'<svg class="star" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"/></svg>'
 };
 const nota=f=>{const v=Number(META[f.id]?.vote_average||0);return v?v.toFixed(1).replace('.',','):'';};
@@ -308,6 +310,10 @@ function renderChrome(){
  // App instalado (tela inicial): barra inferior, mostrada só nesse modo pelo CSS.
  if(tab)tab.innerHTML=NAV.map(([v,l,i])=>`<button type="button" data-nav="${v}">${ICON[i]}<span>${l}</span></button>`).join('');
  document.querySelectorAll('[data-nav]').forEach(el=>el.onclick=()=>go(el.dataset.nav));
+ // Tema claro/escuro: alterna, salva no aparelho e ajusta a cor da barra do navegador.
+ const tt=document.getElementById('theme-toggle');
+ if(tt){const dark=document.documentElement.dataset.theme==='dark';tt.innerHTML=dark?ICON.sun:ICON.moon;tt.setAttribute('aria-label',dark?'Usar tema claro':'Usar tema escuro');tt.title=tt.getAttribute('aria-label');
+   tt.onclick=()=>{const next=document.documentElement.dataset.theme==='dark'?'light':'dark';if(next==='dark')document.documentElement.dataset.theme='dark';else delete document.documentElement.dataset.theme;store.set('cineexpert-tema',next);const m=document.querySelector('meta[name="theme-color"]');if(m)m.content=next==='dark'?'#0e0d16':'#ffffff';renderChrome();};}
  const home=document.getElementById('wordmark');if(home)home.onclick=()=>go('intro');
  const st=document.getElementById('net-status');
  if(st){st.hidden=!(BANCA||navigator.onLine===false);st.textContent=BANCA?'Modo apresentação':'Sem internet: tudo continua funcionando';}
