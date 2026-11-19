@@ -268,7 +268,26 @@ function posterCard(f){
  const n=nota(f);
  return `<button type="button" class="pcard" data-film="${esc(f.id)}" aria-label="${esc(f.titulo)}, ${f.ano}">${posterArt(f,'pc-art')}${n?`<span class="pc-rate" aria-label="Nota ${n}">${ICON.star}${n}</span>`:''}${state.seen.has(f.id)?'<span class="pc-seen">Visto</span>':''}<span class="pc-title">${esc(f.titulo)}</span><span class="pc-sub">${esc(labelGenero(f.genero))}, ${f.ano}</span></button>`;
 }
-const rail=list=>`<div class="rail" role="list">${list.map(f=>`<div role="listitem">${posterCard(f)}</div>`).join('')}</div>`;
+const rail=list=>`<div class="rail-wrap"><button type="button" class="rail-btn prev" aria-label="Filmes anteriores">${ICON.back}</button><div class="rail" role="list">${list.map(f=>`<div role="listitem">${posterCard(f)}</div>`).join('')}</div><button type="button" class="rail-btn next" aria-label="Próximos filmes">${ICON.back}</button></div>`;
+// Esteiras: setas de anterior/próximo e arrastar com o mouse (no desktop não há rolagem lateral sem trackpad).
+function enhanceRails(root){
+ root.querySelectorAll('.rail-wrap').forEach(wrap=>{
+   const r=wrap.querySelector('.rail'),prev=wrap.querySelector('.prev'),next=wrap.querySelector('.next');
+   const sync=()=>{const max=r.scrollWidth-r.clientWidth-2;prev.disabled=r.scrollLeft<=2;next.disabled=r.scrollLeft>=max;wrap.classList.toggle('scrollable',max>0);};
+   const step=dir=>r.scrollBy({left:dir*Math.max(r.clientWidth*0.85,200),behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+   prev.onclick=()=>step(-1);next.onclick=()=>step(1);
+   r.addEventListener('scroll',sync,{passive:true});
+   let drag=null;
+   r.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0)return;drag={x:e.clientX,left:r.scrollLeft,moved:false};});
+   r.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x;if(!drag.moved&&Math.abs(dx)>6){drag.moved=true;r.classList.add('dragging');}if(drag.moved){r.scrollLeft=drag.left-dx;e.preventDefault();}});
+   const end=()=>{if(!drag)return;const moved=drag.moved;drag=null;r.classList.remove('dragging');
+     // Um arraste não deve abrir a ficha do pôster onde o mouse foi solto.
+     if(moved)r.addEventListener('click',ev=>{ev.stopPropagation();ev.preventDefault();},{capture:true,once:true});};
+   r.addEventListener('pointerup',end);r.addEventListener('pointerleave',end);
+   r.addEventListener('dragstart',e=>e.preventDefault());
+   sync();
+ });
+}
 const recomendaveis=()=>D.filmes.filter(f=>f.classificacao_status!=='pendente');
 function bindFilms(origin){APP.querySelectorAll('[data-film]').forEach(el=>el.onclick=()=>openFilm(el.dataset.film,origin));}
 
@@ -282,8 +301,11 @@ function navActive(){
 function go(view){if(view==='quiz')return startQuiz(false);if(view==='catalog')state.catalogState=null;state.view=view;render();}
 function renderChrome(){
  document.body.classList.toggle('banca',BANCA);
- const nav=document.getElementById('topnav'),tab=document.getElementById('tabbar');
+ const nav=document.getElementById('topnav'),tab=document.getElementById('tabbar'),acts=document.getElementById('topactions');
  if(nav)nav.innerHTML=NAV.map(([v,l])=>`<button type="button" data-nav="${v}">${l}</button>`).join('')+`<button type="button" data-nav="how">Como funciona</button>`;
+ // Celular no navegador: atalhos no cabeçalho (a barra inferior disputaria espaço com a barra do Safari/Chrome).
+ if(acts)acts.innerHTML=`<button type="button" class="ta-link" data-nav="catalog" aria-label="Catálogo">${ICON.grid}<span>Catálogo</span></button><button type="button" class="ta-cta" data-nav="quiz">Descobrir</button>`;
+ // App instalado (tela inicial): barra inferior, mostrada só nesse modo pelo CSS.
  if(tab)tab.innerHTML=NAV.map(([v,l,i])=>`<button type="button" data-nav="${v}">${ICON[i]}<span>${l}</span></button>`).join('');
  document.querySelectorAll('[data-nav]').forEach(el=>el.onclick=()=>go(el.dataset.nav));
  const home=document.getElementById('wordmark');if(home)home.onclick=()=>go('intro');
@@ -307,16 +329,18 @@ function renderIntro(){
  const coluna=lista=>{const item=(f,dup)=>`<button type="button" class="wall-item" data-film="${esc(f.id)}" ${dup?'tabindex="-1" aria-hidden="true"':`aria-label="${esc(f.titulo)}, ${f.ano}"`}>${posterArt(f,'wall-art',true)}</button>`;return `<div class="wall-col"><div class="wall-track">${lista.map(f=>item(f,false)).join('')}${lista.map(f=>item(f,true)).join('')}</div></div>`;};
  const parede=`<div class="poster-wall" aria-label="Filmes do catálogo">${[0,1,2].map(c=>coluna(mural.filter((_,i)=>i%3===c))).join('')}</div>`;
  const classicos=base.filter(f=>f.classico_editorial).sort((a,b)=>rating(b)-rating(a)).slice(0,14);
- const recentes=base.filter(f=>f.ano>=new Date().getFullYear()-4).sort((a,b)=>rating(b)-rating(a)).slice(0,14);
+ // Cada fileira mostra filmes diferentes das anteriores.
+ const melhores=top.filter(f=>!classicos.includes(f)).slice(0,14);
+ const recentes=base.filter(f=>f.ano>=new Date().getFullYear()-4&&!classicos.includes(f)&&!melhores.includes(f)).sort((a,b)=>rating(b)-rating(a)).slice(0,14);
  const generos=GER.filter(x=>x[1]!=='qualquer');
  const lead=BANCA
   ?'Um sistema especialista entrevista você sobre gênero, atmosfera, narrativa, ritmo e época, e recomenda filmes explicando cada regra aplicada — sem servidor e sem internet.'
   :'Responda algumas perguntas e receba três filmes escolhidos para você, cada um com o motivo da escolha.';
  const banca=BANCA?`<section class="banca-panel"><h2>Para a apresentação</h2><dl class="figures"><div><dt>Filmes</dt><dd>${D.filmes.length}</dd></div><div><dt>Regras de recomendação</dt><dd>${D.regras.length}</dd></div><div><dt>Regras de perfil</dt><dd>${D.perfis.length}</dd></div></dl><p>Esta edição roda inteira no aparelho: não precisa de FastAPI, computador ligado, chave do TMDB nem login. Pôsteres e metadados são preparados antes da publicação, sem expor o token.</p><div class="actions"><button class="btn" id="how">Como o sistema decide</button><button class="btn" id="stress">Testar com 10 mil registros</button></div></section>`:'';
- APP.innerHTML=`<section class="home-hero"><div class="hh-text"><h1>O filme certo para esta noite.</h1><p class="lead">${lead}</p><div class="actions"><button class="btn primary" id="start">Descobrir meu filme</button><button class="btn quiet" id="catalog">Explorar o catálogo</button></div><p class="fine">Sem cadastro. Funciona sem internet.</p></div>${parede}</section>
+ APP.innerHTML=`<section class="home-hero"><div class="hh-text"><h1>O filme certo para esta noite.</h1><p class="lead">${lead}</p><div class="actions"><button class="btn primary" id="start">Descobrir meu filme</button><button class="btn quiet" id="catalog">Ver catálogo</button></div><p class="fine">Sem cadastro. Funciona sem internet.</p></div>${parede}</section>
  <section class="row"><h2>Por gênero</h2><div class="genre-strip">${generos.map(([n,v])=>`<button type="button" class="gchip" data-genre="${v}">${esc(n)}</button>`).join('')}</div></section>
  ${classicos.length?`<section class="row"><div class="row-head"><h2>Clássicos da curadoria</h2><button type="button" class="link" id="see-all">Ver catálogo</button></div>${rail(classicos)}</section>`:''}
- <section class="row"><h2>Mais bem avaliados</h2>${rail(top.filter(f=>!classicos.includes(f)).slice(0,14))}</section>
+ <section class="row"><h2>Mais bem avaliados</h2>${rail(melhores)}</section>
  ${recentes.length?`<section class="row"><h2>Dos últimos anos</h2>${rail(recentes)}</section>`:''}
  ${banca}`;
  bindFilms('intro');
@@ -538,7 +562,7 @@ function renderStress(){
    finally{btn.disabled=false;}
  };
 }
-function render(){try{if(state.view==='intro')renderIntro();else if(state.view==='quiz')renderQuiz();else if(state.view==='results')renderResults();else if(state.view==='catalog')renderCatalog();else if(state.view==='film')renderFilm();else if(state.view==='stress')renderStress();else renderHow();navActive();syncHistory();window.scrollTo(0,0);}catch(e){APP.innerHTML='<div class="empty"><h2>Não foi possível processar as regras</h2><p>'+esc(e.message)+'</p><button class="btn" onclick="location.reload()">Recarregar</button></div>';}}
+function render(){try{if(state.view==='intro')renderIntro();else if(state.view==='quiz')renderQuiz();else if(state.view==='results')renderResults();else if(state.view==='catalog')renderCatalog();else if(state.view==='film')renderFilm();else if(state.view==='stress')renderStress();else renderHow();enhanceRails(APP);navActive();syncHistory();window.scrollTo(0,0);}catch(e){APP.innerHTML='<div class="empty"><h2>Não foi possível processar as regras</h2><p>'+esc(e.message)+'</p><button class="btn" onclick="location.reload()">Recarregar</button></div>';}}
 // Tudo que depende do navegador fica aqui, para que os testes em Node possam carregar o arquivo.
 function init(){
  readMode();loadSeen();
