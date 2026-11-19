@@ -144,22 +144,6 @@ function setBanca(on){
  if(!BANCA&&state.view==='stress')state.view='intro';
  renderChrome();render();
 }
-function renderChrome(){
- document.body.classList.toggle('banca',BANCA);
- const st=document.getElementById('net-status');
- if(st)st.textContent=BANCA?'◉ Pronto para apresentar':(navigator.onLine===false?'◉ Offline · tudo funciona':'◉ Funciona offline');
- const left=document.getElementById('footer-info'),right=document.getElementById('footer-meta');
- if(left)left.textContent=BANCA
-  ?'EDIÇÃO ACADÊMICA • MOTOR LOCAL · Dados e imagens TMDB, quando preparados; produto não endossado pelo TMDB.'
-  :'Dados e imagens: TMDB · Este produto usa a API do TMDB, mas não é endossado pelo TMDB.';
- if(right)right.innerHTML=`${BANCA?`<span>${D.filmes.length} FILMES • ${D.regras.length+D.perfis.length} REGRAS (${D.regras.length} + ${D.perfis.length})</span>`:''}<button type="button" class="modetoggle" id="mode-toggle" aria-pressed="${BANCA}">${BANCA?'Modo apresentação: ligado ✓':'Modo apresentação'}</button>`;
- const t=document.getElementById('mode-toggle');if(t)t.onclick=()=>setBanca(!BANCA);
-}
-
-// ---------------------------------------------------------------------------
-// Histórico: cada tela e cada passo do quiz vira uma entrada do histórico,
-// para que o botão/gesto "voltar" do celular volte uma tela em vez de fechar o app.
-// ---------------------------------------------------------------------------
 let restoring=false;
 const snap=()=>({view:state.view,step:state.view==='quiz'?state.step:0,chosen:state.view==='film'?state.chosen:null,origin:state.origin||null});
 const sameSnap=(a,b)=>!!a&&!!b&&a.view===b.view&&a.step===b.step&&a.chosen===b.chosen;
@@ -259,40 +243,101 @@ async function shareResults(titles){
  }catch(e){if(e&&e.name==='AbortError')return;toast('Não foi possível compartilhar neste navegador.');}
 }
 
+// ---------------------------------------------------------------------------
+// Interface 5.0 — minimalista: pôster em primeiro plano, Bodoni nos títulos,
+// um único destaque (latão) e navegação fixa no celular.
+// ---------------------------------------------------------------------------
+const ICON={
+ back:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+ share:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>',
+ home:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 01-1 1h-5v-6h-4v6H5a1 1 0 01-1-1z"/></svg>',
+ discover:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/></svg>',
+ grid:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="9" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="9" rx="1.5"/><path d="M4 17h6.5M13.5 17H20M4 20.5h6.5M13.5 20.5H20"/></svg>',
+ search:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>',
+ check:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+};
+const nota=f=>{const v=Number(META[f.id]?.vote_average||0);return v?v.toFixed(1).replace('.',','):'';};
+const metaSpans=parts=>parts.filter(Boolean).map(p=>`<span>${esc(p)}</span>`).join('');
 // Arte de pôster com título por baixo: se a imagem faltar ou falhar, o título aparece.
-function posterArt(f,cls){
+function posterArt(f,cls,eager=false){
  const src=posterSrc(f.id);
- return `<div class="${cls}"><span class="art-title">${esc(f.titulo)}</span>${src?`<img src="${esc(src)}" alt="Pôster de ${esc(f.titulo)}" loading="lazy" onerror="this.remove()">`:''}</div>`;
+ return `<div class="${cls}"><span class="art-title">${esc(f.titulo)}</span>${src?`<img src="${esc(src)}" alt="" ${eager?'':'loading="lazy"'} onerror="this.remove()">`:''}</div>`;
+}
+function posterCard(f){
+ const n=nota(f);
+ return `<button type="button" class="pcard" data-film="${esc(f.id)}" aria-label="${esc(f.titulo)}, ${f.ano}">${posterArt(f,'pc-art')}${n?`<span class="pc-rate" aria-label="Nota ${n}">${n}</span>`:''}${state.seen.has(f.id)?'<span class="pc-seen">Visto</span>':''}<span class="pc-title">${esc(f.titulo)}</span><span class="pc-sub">${esc(labelGenero(f.genero))}, ${f.ano}</span></button>`;
+}
+const rail=list=>`<div class="rail" role="list">${list.map(f=>`<div role="listitem">${posterCard(f)}</div>`).join('')}</div>`;
+const recomendaveis=()=>D.filmes.filter(f=>f.classificacao_status!=='pendente');
+function bindFilms(origin){APP.querySelectorAll('[data-film]').forEach(el=>el.onclick=()=>openFilm(el.dataset.film,origin));}
+
+// Navegação: cabeçalho no desktop, barra flutuante no celular.
+const NAV=[['intro','Início','home'],['quiz','Descobrir','discover'],['catalog','Catálogo','grid']];
+function navActive(){
+ const v=state.view==='results'?'quiz':state.view;
+ document.querySelectorAll('[data-nav]').forEach(el=>{const on=el.dataset.nav===v;el.classList.toggle('on',on);on?el.setAttribute('aria-current','page'):el.removeAttribute('aria-current');});
+ document.body.dataset.view=state.view;
+}
+function go(view){if(view==='quiz')return startQuiz(false);if(view==='catalog')state.catalogState=null;state.view=view;render();}
+function renderChrome(){
+ document.body.classList.toggle('banca',BANCA);
+ const nav=document.getElementById('topnav'),tab=document.getElementById('tabbar');
+ if(nav)nav.innerHTML=NAV.map(([v,l])=>`<button type="button" data-nav="${v}">${l}</button>`).join('')+`<button type="button" data-nav="how">Como funciona</button>`;
+ if(tab)tab.innerHTML=NAV.map(([v,l,i])=>`<button type="button" data-nav="${v}">${ICON[i]}<span>${l}</span></button>`).join('');
+ document.querySelectorAll('[data-nav]').forEach(el=>el.onclick=()=>go(el.dataset.nav));
+ const home=document.getElementById('wordmark');if(home)home.onclick=()=>go('intro');
+ const st=document.getElementById('net-status');
+ if(st){st.hidden=!(BANCA||navigator.onLine===false);st.textContent=BANCA?'Modo apresentação':'Sem internet: tudo continua funcionando';}
+ const left=document.getElementById('footer-info'),right=document.getElementById('footer-meta');
+ if(left)left.textContent=BANCA
+  ?'Edição acadêmica com motor local. Dados e imagens do TMDB, preparados antes da publicação; produto não endossado pelo TMDB.'
+  :'Dados e imagens: TMDB. Este produto usa a API do TMDB, mas não é endossado pelo TMDB.';
+ if(right)right.innerHTML=`${BANCA?`<span>${D.filmes.length} filmes, ${D.regras.length+D.perfis.length} regras (${D.regras.length} + ${D.perfis.length})</span>`:''}<button type="button" class="modetoggle" id="mode-toggle" aria-pressed="${BANCA}">${BANCA?'Sair do modo apresentação':'Modo apresentação'}</button>`;
+ const t=document.getElementById('mode-toggle');if(t)t.onclick=()=>setBanca(!BANCA);
+ navActive();
 }
 
 function renderIntro(){
+ const base=recomendaveis().filter(f=>posterSrc(f.id));
+ const top=[...base].sort((a,b)=>rating(b)-rating(a));
+ const dia=Math.floor(Date.now()/864e5);
+ const destaque=top[dia%Math.min(30,top.length)]||D.filmes[0];
+ const md=META[destaque.id]||{};
+ const classicos=base.filter(f=>f.classico_editorial).sort((a,b)=>rating(b)-rating(a)).slice(0,14);
+ const recentes=base.filter(f=>f.ano>=new Date().getFullYear()-4).sort((a,b)=>rating(b)-rating(a)).slice(0,14);
+ const generos=GER.filter(x=>x[1]!=='qualquer');
  const lead=BANCA
-  ?'Escolha também a época do filme e um subgênero que combine com seu momento. Um Sistema Especialista analisa suas escolhas e recomenda filmes com explicações — mesmo sem internet.'
-  :'Responda algumas perguntas rápidas e receba filmes escolhidos para o seu momento — cada um com a explicação de por que combina com você.';
- const generos=new Set(D.filmes.map(f=>f.genero)).size;
- const stats=BANCA
-  ?`<div class="stat"><strong>${D.filmes.length}</strong><span>filmes no catálogo</span></div><div class="stat"><strong>${D.regras.length}</strong><span>regras de recomendação</span></div><div class="stat"><strong>${D.perfis.length}</strong><span>regras de perfil</span></div>`
-  :`<div class="stat"><strong>${D.filmes.length}</strong><span>filmes no catálogo</span></div><div class="stat"><strong>${generos}</strong><span>gêneros</span></div><div class="stat"><strong>~1 min</strong><span>para responder</span></div>`;
- const capa=D.filmes.filter(f=>posterSrc(f.id)&&f.classificacao_status!=='pendente').sort((a,b)=>rating(b)-rating(a)).slice(0,6);
- const collage=`<div class="collage" aria-hidden="true">${capa.map((f,i)=>`<img class="c${i}" src="${esc(posterSrc(f.id))}" alt="" loading="lazy" onerror="this.remove()">`).join('')}</div>`;
- APP.innerHTML=`<div class="home"><section class="hero"><div class="kicker">◆ Além do gênero</div><h1>O filme certo.<br><span class="accent">No seu momento.</span></h1><p class="lead">${lead}</p><div class="buttons"><button class="btn primary" id="start">✦ Descobrir meu filme →</button><button class="btn" id="catalog">Explorar catálogo</button><button class="btn" id="how">Como o sistema decide?</button>${BANCA?'<button class="btn" id="stress">Testar 10 mil filmes</button>':''}</div><div class="stats">${stats}</div></section>${collage}</div>${BANCA
-  ?'<div class="info">✓ Esta edição funciona no dispositivo: não necessita de FastAPI, computador ligado, chave TMDB ou login. Pôsteres e metadados podem ser preparados no computador, sem expor o token TMDB. Na ausência deles, as capas abstratas continuam disponíveis offline.</div>'
-  :'<div class="info">✓ Sem cadastro e sem internet: suas respostas ficam só no seu aparelho.</div>'}`;
+  ?'Um sistema especialista entrevista você sobre gênero, atmosfera, narrativa, ritmo e época, e recomenda filmes explicando cada regra aplicada — sem servidor e sem internet.'
+  :'Responda algumas perguntas e receba três filmes escolhidos para você, cada um com o motivo da escolha.';
+ const banca=BANCA?`<section class="banca-panel"><h2>Para a apresentação</h2><dl class="figures"><div><dt>Filmes</dt><dd>${D.filmes.length}</dd></div><div><dt>Regras de recomendação</dt><dd>${D.regras.length}</dd></div><div><dt>Regras de perfil</dt><dd>${D.perfis.length}</dd></div></dl><p>Esta edição roda inteira no aparelho: não precisa de FastAPI, computador ligado, chave do TMDB nem login. Pôsteres e metadados são preparados antes da publicação, sem expor o token.</p><div class="actions"><button class="btn" id="how">Como o sistema decide</button><button class="btn" id="stress">Testar com 10 mil registros</button></div></section>`:'';
+ APP.innerHTML=`<section class="home-hero"><div class="hh-text"><h1>O filme certo para esta noite.</h1><p class="lead">${lead}</p><div class="actions"><button class="btn primary" id="start">Descobrir meu filme</button><button class="btn quiet" id="catalog">Explorar o catálogo</button></div><p class="fine">Sem cadastro. Funciona sem internet.</p></div><button type="button" class="feature" data-film="${esc(destaque.id)}" aria-label="Em destaque: ${esc(destaque.titulo)}">${posterArt(destaque,'feature-art',true)}<span class="feature-copy"><span class="feature-tag">Em destaque hoje</span><strong>${esc(destaque.titulo)}</strong><span class="feature-meta">${metaSpans([labelGenero(destaque.genero),String(destaque.ano),md.runtime?`${md.runtime} min`:'',nota(destaque)?`Nota ${nota(destaque)}`:''])}</span></span></button></section>
+ <section class="row"><h2>Por gênero</h2><div class="genre-strip">${generos.map(([n,v])=>`<button type="button" class="gchip" data-genre="${v}">${esc(n)}</button>`).join('')}</div></section>
+ ${classicos.length?`<section class="row"><div class="row-head"><h2>Clássicos da curadoria</h2><button type="button" class="link" id="see-all">Ver catálogo</button></div>${rail(classicos)}</section>`:''}
+ <section class="row"><h2>Mais bem avaliados</h2>${rail(top.filter(f=>!classicos.includes(f)).slice(0,14))}</section>
+ ${recentes.length?`<section class="row"><h2>Dos últimos anos</h2>${rail(recentes)}</section>`:''}
+ ${banca}`;
+ bindFilms('intro');
  document.getElementById('start').onclick=()=>startQuiz(false);
- document.getElementById('how').onclick=()=>{state.view='how';render();};
- document.getElementById('catalog').onclick=()=>{state.view='catalog';render();};
- if(BANCA)document.getElementById('stress').onclick=()=>{state.view='stress';render();};
+ document.getElementById('catalog').onclick=()=>go('catalog');
+ const all=document.getElementById('see-all');if(all)all.onclick=()=>go('catalog');
+ APP.querySelectorAll('[data-genre]').forEach(el=>el.onclick=()=>{state.catalogState={term:'',genre:el.dataset.genre,pagina:0};state.view='catalog';render();});
+ if(BANCA){document.getElementById('how').onclick=()=>go('how');document.getElementById('stress').onclick=()=>go('stress');}
 }
 function renderHow(){
- APP.innerHTML=`<button class="btn" id="back">← Voltar</button><section class="hero" style="padding:25px 0"><div class="kicker">Sistema Especialista</div><h1>Como o <span class="accent">CineExpert</span> decide?</h1><p class="lead">As recomendações são derivadas de regras de produção, não de popularidade.</p></section><div class="how"><div class="panel"><div class="num">01</div><h3>Coleta de fatos</h3><p>As perguntas mudam por gênero: em terror, por exemplo, não há pergunta de live-action; a atmosfera e a narrativa mudam conforme o tipo de terror ou comédia. Com dois gêneros, as opções dos dois são combinadas. A época, perguntada por último, mostra quantos filmes restam em cada período.</p></div><div class="panel"><div class="num">02</div><h3>Inferência de perfil</h3><p>As regras P01–P${D.perfis.length} deduzem um perfil narrativo a partir das preferências.</p></div><div class="panel"><div class="num">03</div><h3>Regras de produção</h3><p>As regras R01–R${D.regras.length} identificam filmes com etiquetas correspondentes e atribuem pesos. A soma desses pesos ordena os candidatos; empates exatos variam entre sessões.</p></div><div class="panel"><div class="num">04</div><h3>Explicação da escolha</h3><p>Cada filme mostra quais das suas preferências atende e quais não. “Clássico” usa curadoria editorial (não é sinônimo de antigo). Se o período tiver poucos filmes compatíveis, a lista é completada com títulos de outras épocas, sempre sinalizados.</p></div></div><p class="note">A pontuação é heurística: não representa probabilidade de satisfação. As etiquetas dos filmes são classificações editoriais.</p><div class="buttons"><button id="start" class="btn primary">Experimentar →</button></div>`;
+ const passos=[
+  ['Perguntas que se adaptam','As perguntas mudam conforme o gênero: em terror não há pergunta de formato, e a atmosfera e a narrativa mudam com o tipo de terror ou de comédia. Com dois gêneros, as opções dos dois se combinam. A época vem por último e mostra quantos filmes restam em cada período.'],
+  ['Um perfil a partir das respostas',`As regras P01 a P${D.perfis.length} deduzem um perfil narrativo, como “suspense investigativo” ou “terror psicológico”.`],
+  ['Regras que pontuam cada filme',`As regras R01 a R${D.regras.length} procuram filmes com as características do perfil e somam pesos. A soma ordena os candidatos; empates exatos variam entre sessões.`],
+  ['Uma explicação para cada escolha','Cada filme mostra quais das suas preferências atende e quais não. “Clássico” é curadoria, não sinônimo de antigo. Se a época tiver poucos filmes, a lista é completada com outras épocas, sempre sinalizadas.']];
+ APP.innerHTML=`<section class="page"><button class="iconbtn" id="back" aria-label="Voltar">${ICON.back}</button><h1>Como o CineExpert decide</h1><p class="lead">As recomendações vêm de regras de produção, não de popularidade.</p><ol class="steps">${passos.map(([t,d])=>`<li><h2>${t}</h2><p>${d}</p></li>`).join('')}</ol><p class="fine">A pontuação é heurística: não é a probabilidade de você gostar. As características dos filmes são classificações editoriais ou automáticas, indicadas na ficha.</p><div class="actions"><button id="start" class="btn primary">Descobrir meu filme</button></div></section>`;
  document.getElementById('back').onclick=()=>goBack(()=>{state.view='intro';});
  document.getElementById('start').onclick=()=>startQuiz(false);
 }
 
 const HINTS={
- genero:'Escolha um gênero — ou dois, se estiver em dúvida entre eles.',
- epoca:'Mostramos quantos filmes do catálogo combinam com suas respostas em cada época.',
- reviravolta:'“Prefiro evitar” tira da lista os filmes com grandes reviravoltas. Nenhum spoiler é mostrado.'
+ genero:'Escolha um gênero, ou dois se estiver entre eles.',
+ epoca:'Ao lado de cada época, quantos filmes combinam com o que você respondeu.',
+ reviravolta:'“Prefiro evitar” tira da lista os filmes com grandes reviravoltas. Nada é revelado.'
 };
 let advanceTimer=null;
 function renderQuiz(){
@@ -310,10 +355,10 @@ function renderQuiz(){
    if(opts.some(o=>o.val===state.answers.epoca&&o.disabled))delete state.answers.epoca;
  }
  const countLabel=o=>o.count===null?'':o.count===0?'<span class="count none">nenhum filme</span>':o.count<3?`<span class="count few">só ${o.count} filme${o.count>1?'s':''}</span>`:`<span class="count">${o.count} filmes</span>`;
- const stepLabel=()=>state.answers.genero?`Passo ${state.step+1} de ${questions().length}`:'Passo 1 · cerca de 7 perguntas';
+ const stepLabel=()=>state.answers.genero?`${state.step+1} de ${questions().length}`:'Cerca de 7 perguntas';
  const last=!!state.answers.genero&&state.step===q.length-1;
  const progress=state.answers.genero?100*(state.step+1)/q.length:100/7;
- APP.innerHTML=`<section class="question"><div class="sectiontop"><div class="kicker">Entrevista inteligente</div><div class="mini" id="step-label">${stepLabel()}</div></div><div class="stepbar"><div style="width:${progress}%"></div></div><div class="panel"><div class="mini">${HINTS[current.key]||'O CineExpert adapta as perguntas conforme suas escolhas.'}</div><h2>${esc(current.title)}</h2><div class="choices${isGenre?' genre-choices':''}">${opts.map(o=>{const any=o.val==='qualquer'||o.val==='indiferente';const ico=isGenre?GENRE_ICON[o.val]:'';return `<button class="choice${any?' any':''}" data-value="${esc(o.val)}" aria-pressed="${selected().includes(o.val)}" ${o.disabled?'disabled':''}><span class="choice-main">${ico?`<span class="ico" aria-hidden="true">${ico}</span>`:''}<span>${esc(o.txt)}</span></span>${countLabel(o)}${o.ex.length?`<small class="ex">ex.: ${esc(o.ex.join(', '))}</small>`:''}</button>`;}).join('')}</div><div class="questionactions"><button class="btn" id="prev">← Voltar</button><button class="btn primary" id="next" ${selected().length&&selected()[0]?'':'disabled'}>${last?'Ver recomendações →':'Continuar →'}</button></div></div><p class="note">Suas respostas permanecem no dispositivo e não são enviadas a um servidor.</p></section>`;
+ APP.innerHTML=`<section class="quiz"><div class="quiz-top"><button class="iconbtn" id="prev" aria-label="Voltar">${ICON.back}</button><div class="stepbar" aria-hidden="true"><div style="width:${progress}%"></div></div><span class="step" id="step-label">${stepLabel()}</span></div><h1 class="q-title">${esc(current.title)}</h1><p class="hint">${HINTS[current.key]||'As próximas perguntas dependem desta resposta.'}</p><div class="choices${isGenre?' genre-choices':''}">${opts.map(o=>{const any=o.val==='qualquer'||o.val==='indiferente';return `<button class="choice${any?' any':''}" data-value="${esc(o.val)}" aria-pressed="${selected().includes(o.val)}" ${o.disabled?'disabled':''}><span class="choice-main">${esc(o.txt)}</span>${countLabel(o)}${o.ex.length?`<small class="ex">${esc(o.ex.join(', '))}</small>`:''}<span class="mark" aria-hidden="true">${ICON.check}</span></button>`;}).join('')}</div><div class="quiz-actions"><button class="btn primary" id="next" ${selected().length&&selected()[0]?'':'disabled'}>${last?'Ver recomendações':'Continuar'}</button></div><p class="fine">Suas respostas ficam só no seu aparelho.</p></section>`;
  const next=document.getElementById('next');
  const goNext=()=>{if(!selected()[0])return;state.step++;render();};
  document.querySelectorAll('.choice').forEach(btn=>btn.onclick=()=>{
@@ -364,9 +409,9 @@ function movieCard(r,i,extra,p,perfil){
  const items=matchInfo(r,p,perfil),crit=items.filter(x=>!x.genre),met=crit.filter(x=>x.ok).length,misses=crit.filter(x=>!x.ok);
  const pct=crit.length?Math.round(100*met/crit.length):100;
  const matchText=crit.length?`Atende ${met} de ${crit.length} preferência${crit.length>1?'s':''}`:'Do gênero que você escolheu';
- const meta=[labelGenero(f.genero),f.ano,m.runtime?`${m.runtime} min`:'',m.director?`Direção: ${m.director}`:''].filter(Boolean).join(' · ');
- const banca=BANCA?`<p class="micro">Regras e critérios do motor:</p><ul>${r.motivos.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>${r.regras_disparadas.length?`<div>${r.regras_disparadas.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}</div>`:''}`:'';
- return `<article class="movie${extra?' movie-extra':''}">${posterArt(f,'mc-art')}<div class="moviebody"><div class="rank${i===0?' first':''}">RECOMENDAÇÃO ${String(i+1).padStart(2,'0')}</div>${extra?'<div class="badge-out">Fora da época escolhida</div>':''}<div class="movietitle"><h3>${esc(f.titulo)}</h3>${BANCA?`<div class="points">${r.pontos}<small>pontos</small></div>`:''}</div><div class="moviemeta">${esc(meta)}</div><div class="match"><div class="matchbar" aria-hidden="true"><div style="width:${pct}%"></div></div><span>${matchText}</span></div>${misses.length?`<div class="miss">Diferente em: ${esc(misses.map(x=>x.key).join(', '))}</div>`:''}<details class="details" ${i===0?'open':''}><summary>Por que combina com você?</summary><ul class="checks">${items.map(x=>`<li class="${x.ok?'ok':'no'}">${esc(x.ok?x.txt:x.no)}</li>`).join('')}</ul>${banca}</details><div class="card-actions"><button class="btn card-open" data-film="${esc(f.id)}">Ver ficha completa →</button><button class="btn ghost seen-btn" data-seen="${esc(f.id)}" title="Tira este filme da lista neste aparelho">Já vi esse</button></div></div></article>`;
+ const src=posterSrc(f.id);
+ const banca=BANCA?`<p class="micro">Regras e critérios do motor</p><ul>${r.motivos.map(s=>`<li>${esc(s)}</li>`).join('')}</ul>${r.regras_disparadas.length?`<div class="tags">${r.regras_disparadas.map(s=>`<span class="tag">${esc(s)}</span>`).join('')}</div>`:''}`:'';
+ return `<article class="movie${i===0?' lead':''}${extra?' movie-extra':''}">${i===0&&src?`<div class="mc-backdrop" aria-hidden="true" style="background-image:url('${esc(src)}')"></div>`:''}${posterArt(f,'mc-art',i===0)}<div class="moviebody"><div class="rank">${i+1}ª escolha${extra?'<span class="badge-out">Fora da época escolhida</span>':''}</div><div class="movietitle"><h3>${esc(f.titulo)}</h3>${BANCA?`<div class="points">${r.pontos}<small>pontos</small></div>`:''}</div><div class="moviemeta">${metaSpans([labelGenero(f.genero),String(f.ano),m.runtime?`${m.runtime} min`:'',m.director?`Direção de ${m.director}`:''])}</div><div class="match"><div class="matchbar" aria-hidden="true"><div style="width:${pct}%"></div></div><span>${matchText}</span></div>${misses.length?`<div class="miss">Diferente em ${esc(misses.map(x=>x.key).join(', '))}</div>`:''}<details class="details" ${i===0?'open':''}><summary>Por que combina com você</summary><ul class="checks">${items.map(x=>`<li class="${x.ok?'ok':'no'}">${esc(x.ok?x.txt:x.no)}</li>`).join('')}</ul>${banca}</details><div class="card-actions"><button class="btn${i===0?' primary':''} card-open" data-film="${esc(f.id)}">Ver ficha</button><button class="btn quiet seen-btn" data-seen="${esc(f.id)}" title="Tira este filme da lista neste aparelho">Já vi esse</button></div></div></article>`;
 }
 function answerChips(){
  return questions().map((x,i)=>{
@@ -399,62 +444,70 @@ function renderResults(){
  let aviso='';
  if(nExtra){
    const ec=esc(epocaCurta(epoca));
-   aviso=`<p class="note limited">${main.length===0?`Nenhum filme da época “${ec}” combina com tudo o que você pediu`:`Só ${main.length} filme${main.length>1?'s':''} da época “${ec}” combina${main.length>1?'m':''} com tudo o que você pediu`}${state.seen.size?' (sem contar os que você já viu)':''}. Os demais são de outras épocas e estão marcados como “Fora da época escolhida”.</p>`;
+   aviso=`<p class="note limited">${main.length===0?`Nenhum filme da época “${ec}” combina com tudo o que você pediu`:`Só ${main.length} filme${main.length>1?'s':''} da época “${ec}” combina${main.length>1?'m':''} com tudo o que você pediu`}${state.seen.size?' (sem contar os que você já viu)':''}. Os demais são de outras épocas e estão marcados.</p>`;
  }
- const perfilMeta=BANCA
-  ?`<div class="mini">${result.tr.length?esc(result.tr.map(t=>t.regra).join(' • ')):'Nenhum perfil específico ativado'} · ${result.total} candidatos com classificação para recomendação</div>`:'';
+ const perfilMeta=BANCA?`<p class="fine">${result.tr.length?esc(result.tr.map(t=>t.regra).join(', ')):'Nenhum perfil específico ativado'}. ${result.total} candidatos com classificação para recomendação.</p>`:'';
  const restantes=pool.length-state.shown;
  const nota=BANCA
-  ?'“Clássico” é uma etiqueta de curadoria editorial, não uma categoria universal. Demonstração acadêmica offline. As pontuações são heurísticas, não probabilidades. Novas classificações preliminares exigem revisão humana. Sem necessidade de conexão à internet nem de servidor Python.'
-  :'As características dos filmes são classificações editoriais do CineExpert. A ordem considera quantas das suas preferências cada filme atende e o peso de cada uma.';
- APP.innerHTML=`<div class="results"><div class="kicker">Análise concluída</div><h2>Seu próximo filme <span class="accent">está aqui.</span></h2><div class="profile"><div class="profile-main"><div class="kicker">${perfil?'Perfil inferido':'Sua busca'}</div><strong>${esc(name)}</strong>${perfilMeta}<div class="chips" aria-label="Suas respostas — toque para mudar">${answerChips()}</div><div class="mini">Toque numa resposta para mudá-la.</div></div><button class="btn" id="share">↗ Compartilhar</button></div>${aviso}${shown.length?`<div class="recommend-grid">${shown.map((x,i)=>movieCard(x.r,i,x.extra,p,perfil)).join('')}</div>`:`<div class="panel empty"><h3>Nenhum filme encontrado com essa combinação</h3><p>Experimente responder “Tanto faz” em alguma pergunta${state.seen.size?' ou mostrar de novo os filmes que você marcou como vistos':''}.</p></div>`}<div class="more-row">${restantes>0?`<button class="btn" id="more">Ver mais ${Math.min(3,restantes)} opç${Math.min(3,restantes)>1?'ões':'ão'}</button>`:''}${state.seen.size?`<button class="linkbtn" id="clear-seen">Mostrar de novo ${state.seen.size} filme${state.seen.size>1?'s':''} marcado${state.seen.size>1?'s':''} como “já vi”</button>`:''}</div><p class="note">${nota}</p><div class="buttons"><button id="again2" class="btn primary">Nova recomendação</button><button class="btn" id="how">${BANCA?'Explicar motor especialista':'Como o sistema decide?'}</button></div></div>`;
+  ?'“Clássico” é uma etiqueta de curadoria editorial. As pontuações são heurísticas, não probabilidades. Classificações preliminares e automáticas exigem revisão humana. Tudo roda no aparelho, sem servidor.'
+  :'A ordem considera quantas das suas preferências cada filme atende e o peso de cada uma.';
+ APP.innerHTML=`<div class="results"><div class="results-head"><div><h1>Escolhemos para você</h1><p class="profile-name">${perfil?'Perfil':'Busca'}: ${esc(name)}</p>${perfilMeta}</div><button class="iconbtn" id="share" aria-label="Compartilhar recomendações">${ICON.share}</button></div><div class="chips" aria-label="Suas respostas; toque para mudar">${answerChips()}</div>${aviso}${shown.length?`<div class="recommend-grid">${shown.map((x,i)=>movieCard(x.r,i,x.extra,p,perfil)).join('')}</div>`:`<div class="empty"><h2>Nenhum filme com essa combinação</h2><p>Troque uma resposta por “Tanto faz”${state.seen.size?' ou mostre de novo os filmes que você marcou como vistos':''}.</p></div>`}<div class="more-row">${restantes>0?`<button class="btn" id="more">Ver mais ${Math.min(3,restantes)} opç${Math.min(3,restantes)>1?'ões':'ão'}</button>`:''}${state.seen.size?`<button class="link" id="clear-seen">Mostrar de novo ${state.seen.size} filme${state.seen.size>1?'s':''} marcado${state.seen.size>1?'s':''} como visto${state.seen.size>1?'s':''}</button>`:''}</div><p class="fine">${nota}</p><div class="actions"><button id="again2" class="btn quiet">Começar de novo</button><button class="link" id="how">${BANCA?'Explicar o motor especialista':'Como o sistema decide'}</button></div></div>`;
  APP.querySelectorAll('.card-open').forEach(el=>el.onclick=()=>openFilm(el.dataset.film,'results'));
- APP.querySelectorAll('.seen-btn').forEach(el=>el.onclick=()=>{state.seen.add(el.dataset.seen);saveSeen();renderResults();toast('Pronto — não vamos mais sugerir esse.');});
+ APP.querySelectorAll('.seen-btn').forEach(el=>el.onclick=()=>{state.seen.add(el.dataset.seen);saveSeen();renderResults();toast('Marcado como visto. Não vamos mais sugerir esse.');});
  APP.querySelectorAll('.chip').forEach(el=>el.onclick=()=>{state.step=Number(el.dataset.step);state.shown=3;state.view='quiz';render();});
  const more=document.getElementById('more');if(more)more.onclick=()=>{state.shown+=3;renderResults();};
  const clear=document.getElementById('clear-seen');if(clear)clear.onclick=()=>{state.seen.clear();saveSeen();renderResults();};
  document.getElementById('share').onclick=()=>shareResults(shown.map(x=>byId(x.r.id).titulo));
  document.getElementById('again2').onclick=()=>startQuiz(false);
- document.getElementById('how').onclick=()=>{state.view='how';render();};
+ document.getElementById('how').onclick=()=>go('how');
 }
 function renderCatalog(){
- const genres=[['Todos os gêneros','todos'],...GER.filter(x=>x[1]!=='qualquer')];
- const PAGE=24;let pagina=0;
- APP.innerHTML=`<div class="catalog-wrap"><button class="btn" id="back">← Voltar</button><section class="catalog-head"><div class="kicker">Base de conhecimento</div><h1>Explore <span class="accent">${D.filmes.length} filmes.</span></h1><p class="lead">${BANCA?`Busque por título ou gênero. Os resultados aparecem em páginas de até ${PAGE} filmes, sem carregar todos os cards simultaneamente.`:'Busque por título ou gênero e abra a ficha completa de cada filme.'}</p></section><div class="catalog-controls"><label class="sr-only" for="filter-title">Buscar filme</label><input id="filter-title" type="search" placeholder="Buscar pelo título do filme..." autocomplete="off"><label class="sr-only" for="filter-genre">Filtrar gênero</label><select id="filter-genre">${genres.map(([nome,valor])=>`<option value="${valor}">${esc(nome)}</option>`).join('')}</select></div><div class="mini" id="count-label" role="status"></div><div id="catalog-list" class="catalog-grid"></div><div class="pager"><button class="btn" id="page-prev">← Anterior</button><span id="page-label" class="mini"></span><button class="btn" id="page-next">Próxima →</button></div><p class="note">Parte dos novos filmes possui classificação preliminar; títulos aguardando curadoria podem ser explorados, mas ainda não entram nas recomendações.</p><div class="buttons"><button class="btn primary" id="quiz-from-catalog">Receber recomendações →</button></div></div>`;
- const $term=document.getElementById('filter-title'),$genre=document.getElementById('filter-genre'),$list=document.getElementById('catalog-list');
+ const genres=[['Todos','todos'],...GER.filter(x=>x[1]!=='qualquer')];
+ const PAGE=24;let pagina=0,genre='todos';
+ APP.innerHTML=`<section class="catalog"><div class="catalog-head"><h1>Catálogo</h1><p class="lead" id="count-label" role="status"></p></div><label class="search"><span class="sr-only">Buscar filme</span>${ICON.search}<input id="filter-title" type="search" placeholder="Buscar pelo título" autocomplete="off"></label><div class="genre-strip" role="group" aria-label="Filtrar por gênero">${genres.map(([n,v])=>`<button type="button" class="gchip" data-g="${v}" aria-pressed="false">${esc(n)}</button>`).join('')}</div><div id="catalog-list" class="catalog-grid"></div><div class="pager"><button class="btn quiet" id="page-prev">Anterior</button><span id="page-label" class="fine"></span><button class="btn quiet" id="page-next">Próxima</button></div><p class="fine">Títulos aguardando curadoria aparecem aqui, mas ainda não entram nas recomendações.</p></section>`;
+ const $term=document.getElementById('filter-title'),$list=document.getElementById('catalog-list');
  function update(reset=false){
    if(reset)pagina=0;
-   const filtrados=CINE_ENGINE.filtrarCatalogo(D.filmes,$term.value,$genre.value);
+   APP.querySelectorAll('[data-g]').forEach(el=>el.setAttribute('aria-pressed',String(el.dataset.g===genre)));
+   const filtrados=CINE_ENGINE.filtrarCatalogo(D.filmes,$term.value,genre);
    const totalPag=Math.max(1,Math.ceil(filtrados.length/PAGE));
    pagina=Math.min(pagina,totalPag-1);
    const slice=filtrados.slice(pagina*PAGE,(pagina+1)*PAGE);
-   document.getElementById('count-label').textContent=BANCA?`${filtrados.length} de ${D.filmes.length} filmes · ${slice.length} exibidos`:`${filtrados.length} filme${filtrados.length===1?'':'s'}`;
-   $list.innerHTML=slice.length?slice.map(f=>{
-     const badges=[f.classico_editorial?'<span class="cbadge classic">Clássico</span>':'',f.classificacao_status==='pendente'?'<span class="cbadge">Aguardando curadoria</span>':'',BANCA&&f.origem==='automatica'?'<span class="cbadge">Automática</span>':BANCA&&f.classificacao_status==='preliminar'?'<span class="cbadge">Preliminar</span>':'',state.seen.has(f.id)?'<span class="cbadge seen">✓ Já visto</span>':''].join('');
-     return `<button type="button" class="catalog-item" data-film="${esc(f.id)}">${posterArt(f,'ci-art')}<div class="ci-body"><span class="mini">${esc(labelGenero(f.genero))} · ${f.ano}</span><h3>${esc(f.titulo)}</h3>${badges?`<div class="cbadges">${badges}</div>`:''}</div></button>`;
-   }).join(''):'<div class="panel catalog-empty">Nenhum filme encontrado. Tente outro título ou gênero.</div>';
-   $list.querySelectorAll('[data-film]').forEach(el=>el.onclick=()=>{state.catalogState={term:$term.value,genre:$genre.value,pagina};openFilm(el.dataset.film,'catalog');});
+   document.getElementById('count-label').textContent=BANCA?`${filtrados.length} de ${D.filmes.length} filmes, ${slice.length} nesta página.`:`${filtrados.length} filme${filtrados.length===1?'':'s'}${genre!=='todos'?` de ${lower(labelGenero(genre))}`:''}.`;
+   $list.innerHTML=slice.length?slice.map(f=>posterCard(f)).join(''):'<div class="empty catalog-empty"><h2>Nenhum filme encontrado</h2><p>Tente outro título ou escolha “Todos”.</p></div>';
+   $list.querySelectorAll('[data-film]').forEach(el=>el.onclick=()=>{state.catalogState={term:$term.value,genre,pagina};openFilm(el.dataset.film,'catalog');});
    document.getElementById('page-label').textContent=`Página ${pagina+1} de ${totalPag}`;
    document.getElementById('page-prev').disabled=pagina===0;
    document.getElementById('page-next').disabled=pagina>=totalPag-1;
  }
- $term.addEventListener('input',()=>update(true));$genre.addEventListener('change',()=>update(true));
+ $term.addEventListener('input',()=>update(true));
+ APP.querySelectorAll('[data-g]').forEach(el=>el.onclick=()=>{genre=el.dataset.g;update(true);});
  document.getElementById('page-prev').onclick=()=>{pagina--;update();window.scrollTo(0,0);};
  document.getElementById('page-next').onclick=()=>{pagina++;update();window.scrollTo(0,0);};
- if(state.catalogState){$term.value=state.catalogState.term||'';$genre.value=state.catalogState.genre||'todos';pagina=state.catalogState.pagina||0;}
+ if(state.catalogState){$term.value=state.catalogState.term||'';genre=state.catalogState.genre||'todos';pagina=state.catalogState.pagina||0;}
  update();
- document.getElementById('back').onclick=()=>goBack(()=>{state.view='intro';});
- document.getElementById('quiz-from-catalog').onclick=()=>startQuiz(false);
 }
 function openFilm(id,origin='catalog'){state.chosen=id;state.origin=origin;state.view='film';render();}
+// Filmes parecidos: mesmo gênero, mais etiquetas e atmosferas em comum, desempate pela nota.
+function parecidos(f,n=12){
+ const tags=new Set(f.tags);
+ return recomendaveis().filter(x=>x.id!==f.id&&x.genero===f.genero)
+  .map(x=>({x,s:2*x.tags.filter(t=>tags.has(t)).length+x.atmosferas.filter(a=>f.atmosferas.includes(a)).length+(x.ritmo===f.ritmo?1:0)}))
+  .sort((a,b)=>b.s-a.s||rating(b.x)-rating(a.x)).slice(0,n).map(o=>o.x);
+}
 function renderFilm(){
  const f=byId(state.chosen);if(!f){state.view='catalog';return renderCatalog();}
- const m=META[f.id]||{};
- const picture=posterSrc(f.id)?`<img class="film-poster" src="${esc(posterSrc(f.id))}" alt="Pôster de ${esc(f.titulo)}" onerror="this.style.display='none'">`:`<div class="film-fallback" aria-label="Pôster não disponível">Pôster não disponível offline</div>`;
- const visto=state.seen.has(f.id);
- APP.innerHTML=`<div class="catalog-wrap film-page"><button class="btn" id="film-back">← Voltar</button><div class="film-hero"><div class="film-art">${picture}</div><div class="film-information"><div class="kicker">Ficha cinematográfica</div><h1>${esc(f.titulo)}</h1><p class="mini">${esc(labelGenero(f.genero))} · ${f.ano} · ${esc(f.formato==='animacao'?'Animação':'Live-action')}${m.runtime?' · '+esc(m.runtime)+' min':''}</p><p class="film-synopsis">${esc(m.overview||'Sinopse ainda não preparada para esta obra. As características editoriais estão disponíveis abaixo.')}</p>${m.director?`<p><strong>Direção:</strong> ${esc(m.director)}</p>`:''}${m.cast?.length?`<p><strong>Elenco:</strong> ${esc(m.cast.slice(0,5).join(', '))}</p>`:''}${m.vote_average?`<p><strong>TMDB:</strong> ${Number(m.vote_average).toFixed(1)}/10</p>`:''}<div class="film-actions">${m.tmdb_id?`<a class="btn" href="https://www.themoviedb.org/movie/${Number(m.tmdb_id)}" target="_blank" rel="noopener noreferrer">Ver no TMDB ↗</a>`:''}<button class="btn ghost" id="film-seen" aria-pressed="${visto}">${visto?'✓ Já vi esse':'Marcar como “já vi”'}</button></div></div></div><div class="panel"><h2>Características utilizadas pelo CineExpert</h2><p><strong>Atmosfera:</strong> ${esc(f.atmosferas.map(nice).join(', '))}</p><p><strong>Estilo narrativo:</strong> ${esc(f.narrativas.map(nice).join(', '))}</p><p><strong>Ritmo:</strong> ${esc(nice(f.ritmo))}</p><div class="catalog-tags">${f.tags.slice(0,8).map(t=>`<span>${esc(nice(t))}</span>`).join('')}</div><p class="note">${f.origem==='automatica'?'Estas características foram geradas automaticamente a partir dos gêneros e das palavras-chave do TMDB, sem revisão editorial.':'Estas características são classificações editoriais e não vêm automaticamente do TMDB.'} Dados cinematográficos e imagens, quando presentes, foram preparados antes da publicação.</p></div></div>`;
+ const m=META[f.id]||{},src=posterSrc(f.id),visto=state.seen.has(f.id),n=nota(f);
+ const sinopse=m.overview||'Sinopse ainda não disponível para este filme. As características usadas nas recomendações estão abaixo.';
+ const similares=parecidos(f);
+ APP.innerHTML=`<article class="film">${src?`<div class="film-backdrop" aria-hidden="true" style="background-image:url('${esc(src)}')"></div>`:''}<div class="film-top"><button class="iconbtn" id="film-back" aria-label="Voltar">${ICON.back}</button><button class="iconbtn" id="film-share" aria-label="Compartilhar filme">${ICON.share}</button></div><div class="film-hero">${posterArt(f,'film-art',true)}<div class="film-info"><h1>${esc(f.titulo)}</h1><p class="film-meta">${metaSpans([labelGenero(f.genero),String(f.ano),f.formato==='animacao'?'Animação':'',m.runtime?`${m.runtime} min`:''])}${n?`<span class="film-rate">Nota ${n} no TMDB</span>`:''}</p><div class="film-actions"><button class="btn${visto?' done':' primary'}" id="film-seen" aria-pressed="${visto}">${visto?`${ICON.check} Visto`:'Marcar como visto'}</button>${m.tmdb_id?`<a class="btn quiet" href="https://www.themoviedb.org/movie/${Number(m.tmdb_id)}" target="_blank" rel="noopener noreferrer">Abrir no TMDB</a>`:''}</div><p class="film-synopsis" id="synopsis">${esc(sinopse)}</p><button class="link" id="more-synopsis">Ler mais</button>${m.director||m.cast?.length?`<dl class="credits">${m.director?`<div><dt>Direção</dt><dd>${esc(m.director)}</dd></div>`:''}${m.cast?.length?`<div><dt>Elenco</dt><dd>${esc(m.cast.slice(0,5).join(', '))}</dd></div>`:''}</dl>`:''}</div></div><section class="film-section"><h2>Como o CineExpert vê este filme</h2><dl class="traits"><div><dt>Atmosfera</dt><dd>${esc(f.atmosferas.map(nice).join(', '))}</dd></div><div><dt>Narrativa</dt><dd>${esc(f.narrativas.map(x=>ROT[x]||nice(x)).join(', '))}</dd></div><div><dt>Ritmo</dt><dd>${esc(nice(f.ritmo))}</dd></div></dl><div class="tags">${f.tags.filter(t=>t!=='sem_reviravolta').slice(0,8).map(t=>`<span class="tag">${esc(nice(t))}</span>`).join('')}</div><p class="fine">${f.origem==='automatica'?'Características geradas automaticamente a partir dos gêneros e das palavras-chave do TMDB, sem revisão editorial.':'Características definidas pela curadoria do CineExpert.'}</p></section>${similares.length?`<section class="film-section"><h2>Parecidos</h2>${rail(similares)}</section>`:''}</article>`;
  document.getElementById('film-back').onclick=()=>goBack(()=>{state.view=state.origin||'catalog';});
+ document.getElementById('film-share').onclick=()=>shareResults([f.titulo]);
  document.getElementById('film-seen').onclick=()=>{state.seen.has(f.id)?state.seen.delete(f.id):state.seen.add(f.id);saveSeen();renderFilm();};
+ const ms=document.getElementById('more-synopsis'),sy=document.getElementById('synopsis');
+ // Só mostra "Ler mais" se a sinopse realmente foi cortada.
+ if(ms){if(sy.scrollHeight<=sy.clientHeight+2)ms.remove();else ms.onclick=()=>{sy.classList.add('open');ms.remove();};}
+ APP.querySelectorAll('.rail [data-film]').forEach(el=>el.onclick=()=>openFilm(el.dataset.film,'film'));
 }
 // O teste de escala só é baixado quando alguém abre o laboratório (modo apresentação).
 function loadBenchmark(){
@@ -463,7 +516,7 @@ function loadBenchmark(){
 }
 function renderStress(){
  if(!BANCA){state.view='intro';return renderIntro();}
- APP.innerHTML=`<div class="catalog-wrap"><button class="btn" id="back">← Voltar</button><section class="catalog-head"><div class="kicker">Laboratório de desempenho</div><h1>O CineExpert aguenta <span class="accent">10.000 registros?</span></h1><p class="lead">Teste no seu aparelho. Gere bases <strong>sintéticas</strong> de 1.000, 5.000 e 10.000 registros e meça geração, busca, inferência e montagem de 24 cards. <strong>Não são 10 mil filmes reais.</strong></p></section><div class="panel"><button class="btn primary" id="run-stress">Executar testes neste dispositivo</button><p class="note">A duração depende da memória e do navegador do seu celular. Cada base é descartada após a medição; não entra no catálogo de recomendações.</p><div id="stress-status" class="mini" role="status"></div><div id="stress-results"></div></div></div>`;
+ APP.innerHTML=`<section class="page"><button class="iconbtn" id="back" aria-label="Voltar">${ICON.back}</button><h1>O CineExpert aguenta 10 mil registros?</h1><p class="lead">Gera bases sintéticas de 1.000, 5.000 e 10.000 registros e mede geração, busca, inferência e montagem de 24 cards neste aparelho. Não são filmes reais.</p><div class="actions"><button class="btn primary" id="run-stress">Executar os testes</button></div><p class="fine">A duração depende do aparelho. Cada base é descartada após a medição.</p><div id="stress-status" class="fine" role="status"></div><div id="stress-results"></div></section>`;
  document.getElementById('back').onclick=()=>goBack(()=>{state.view='intro';});
  document.getElementById('run-stress').onclick=async e=>{
    const btn=e.currentTarget,status=document.getElementById('stress-status'),box=document.getElementById('stress-results');
@@ -476,19 +529,19 @@ function renderStress(){
        await new Promise(resolve=>setTimeout(resolve,40));
        rows.push(CINE_BENCHMARK.medir(n));
      }
-     box.innerHTML=`<div class="benchmark-scroll"><table class="benchmark-table"><thead><tr><th>Registros</th><th>Gerar</th><th>Buscar</th><th>Inferir</th><th>24 cards</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.n.toLocaleString('pt-BR')}</td><td>${r.geracao.toFixed(1)} ms</td><td>${r.busca.toFixed(1)} ms</td><td>${r.inferencia.toFixed(1)} ms</td><td>${r.render24.toFixed(1)} ms</td></tr>`).join('')}</tbody></table></div><p class="note">Valores medidos neste navegador, sujeitos a variação. A coluna “24 cards” mede a criação de HTML para uma página, não a exibição de 10 mil cards. Os testes não medem a qualidade das recomendações.</p>`;
+     box.innerHTML=`<div class="benchmark-scroll"><table class="benchmark-table"><thead><tr><th>Registros</th><th>Gerar</th><th>Buscar</th><th>Inferir</th><th>24 cards</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.n.toLocaleString('pt-BR')}</td><td>${r.geracao.toFixed(1)} ms</td><td>${r.busca.toFixed(1)} ms</td><td>${r.inferencia.toFixed(1)} ms</td><td>${r.render24.toFixed(1)} ms</td></tr>`).join('')}</tbody></table></div><p class="fine">Valores medidos neste navegador. “24 cards” mede a criação do HTML de uma página. Os testes não medem a qualidade das recomendações.</p>`;
      status.textContent='Testes concluídos. Nenhum dado fictício foi adicionado ao catálogo.';
    }catch(err){status.textContent='Erro no teste: '+err.message;}
    finally{btn.disabled=false;}
  };
 }
-function render(){try{if(state.view==='intro')renderIntro();else if(state.view==='quiz')renderQuiz();else if(state.view==='results')renderResults();else if(state.view==='catalog')renderCatalog();else if(state.view==='film')renderFilm();else if(state.view==='stress')renderStress();else renderHow();syncHistory();window.scrollTo(0,0);}catch(e){APP.innerHTML='<div class="panel"><h2>Não foi possível processar as regras</h2><p>'+esc(e.message)+'</p><button class="btn" onclick="location.reload()">Reiniciar</button></div>';}}
+function render(){try{if(state.view==='intro')renderIntro();else if(state.view==='quiz')renderQuiz();else if(state.view==='results')renderResults();else if(state.view==='catalog')renderCatalog();else if(state.view==='film')renderFilm();else if(state.view==='stress')renderStress();else renderHow();navActive();syncHistory();window.scrollTo(0,0);}catch(e){APP.innerHTML='<div class="empty"><h2>Não foi possível processar as regras</h2><p>'+esc(e.message)+'</p><button class="btn" onclick="location.reload()">Recarregar</button></div>';}}
 // Tudo que depende do navegador fica aqui, para que os testes em Node possam carregar o arquivo.
 function init(){
  readMode();loadSeen();
  window.addEventListener('popstate',onPopState);
  window.addEventListener('online',renderChrome);window.addEventListener('offline',renderChrome);
- if('serviceWorker' in navigator&&['https:','http:'].includes(location.protocol)){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+ if('serviceWorker' in navigator&&['https:','http:'].includes(location.protocol)&&!window.CINE_PROTOTIPO){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
  renderChrome();render();
 }
 init();
