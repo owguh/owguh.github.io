@@ -302,8 +302,10 @@ function renderIntro(){
  const base=recomendaveis().filter(f=>posterSrc(f.id));
  const top=[...base].sort((a,b)=>rating(b)-rating(a));
  const dia=Math.floor(Date.now()/864e5);
- const destaque=top[dia%Math.min(30,top.length)]||D.filmes[0];
- const md=META[destaque.id]||{};
+ // Parede de pôsteres do topo: 24 filmes bem avaliados, embaralhados por dia, em 3 colunas.
+ const mural=[...top.slice(0,60)].sort((x,y)=>hash(dia+x.id)-hash(dia+y.id)).slice(0,24);
+ const coluna=lista=>{const item=(f,dup)=>`<button type="button" class="wall-item" data-film="${esc(f.id)}" ${dup?'tabindex="-1" aria-hidden="true"':`aria-label="${esc(f.titulo)}, ${f.ano}"`}>${posterArt(f,'wall-art',true)}</button>`;return `<div class="wall-col"><div class="wall-track">${lista.map(f=>item(f,false)).join('')}${lista.map(f=>item(f,true)).join('')}</div></div>`;};
+ const parede=`<div class="poster-wall" aria-label="Filmes do catálogo">${[0,1,2].map(c=>coluna(mural.filter((_,i)=>i%3===c))).join('')}</div>`;
  const classicos=base.filter(f=>f.classico_editorial).sort((a,b)=>rating(b)-rating(a)).slice(0,14);
  const recentes=base.filter(f=>f.ano>=new Date().getFullYear()-4).sort((a,b)=>rating(b)-rating(a)).slice(0,14);
  const generos=GER.filter(x=>x[1]!=='qualquer');
@@ -311,7 +313,7 @@ function renderIntro(){
   ?'Um sistema especialista entrevista você sobre gênero, atmosfera, narrativa, ritmo e época, e recomenda filmes explicando cada regra aplicada — sem servidor e sem internet.'
   :'Responda algumas perguntas e receba três filmes escolhidos para você, cada um com o motivo da escolha.';
  const banca=BANCA?`<section class="banca-panel"><h2>Para a apresentação</h2><dl class="figures"><div><dt>Filmes</dt><dd>${D.filmes.length}</dd></div><div><dt>Regras de recomendação</dt><dd>${D.regras.length}</dd></div><div><dt>Regras de perfil</dt><dd>${D.perfis.length}</dd></div></dl><p>Esta edição roda inteira no aparelho: não precisa de FastAPI, computador ligado, chave do TMDB nem login. Pôsteres e metadados são preparados antes da publicação, sem expor o token.</p><div class="actions"><button class="btn" id="how">Como o sistema decide</button><button class="btn" id="stress">Testar com 10 mil registros</button></div></section>`:'';
- APP.innerHTML=`<section class="home-hero"><div class="hh-text"><h1>O filme certo para esta noite.</h1><p class="lead">${lead}</p><div class="actions"><button class="btn primary" id="start">Descobrir meu filme</button><button class="btn quiet" id="catalog">Explorar o catálogo</button></div><p class="fine">Sem cadastro. Funciona sem internet.</p></div><button type="button" class="feature" data-film="${esc(destaque.id)}" aria-label="Em destaque: ${esc(destaque.titulo)}">${posterArt(destaque,'feature-art',true)}<span class="feature-copy"><span class="feature-tag">Em destaque hoje</span><strong>${esc(destaque.titulo)}</strong><span class="feature-meta">${metaSpans([labelGenero(destaque.genero),String(destaque.ano),md.runtime?`${md.runtime} min`:'',nota(destaque)?`Nota ${nota(destaque)} no TMDB`:''])}</span></span></button></section>
+ APP.innerHTML=`<section class="home-hero"><div class="hh-text"><h1>O filme certo para esta noite.</h1><p class="lead">${lead}</p><div class="actions"><button class="btn primary" id="start">Descobrir meu filme</button><button class="btn quiet" id="catalog">Explorar o catálogo</button></div><p class="fine">Sem cadastro. Funciona sem internet.</p></div>${parede}</section>
  <section class="row"><h2>Por gênero</h2><div class="genre-strip">${generos.map(([n,v])=>`<button type="button" class="gchip" data-genre="${v}">${esc(n)}</button>`).join('')}</div></section>
  ${classicos.length?`<section class="row"><div class="row-head"><h2>Clássicos da curadoria</h2><button type="button" class="link" id="see-all">Ver catálogo</button></div>${rail(classicos)}</section>`:''}
  <section class="row"><h2>Mais bem avaliados</h2>${rail(top.filter(f=>!classicos.includes(f)).slice(0,14))}</section>

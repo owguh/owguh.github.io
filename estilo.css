@@ -82,16 +82,6 @@ body[data-view="quiz"] .tabbar,body[data-view="film"] .tabbar{display:none}
 .hh-text .lead{margin-top:18px}
 .hh-text .actions{margin-top:28px}
 .hh-text .fine{margin-top:14px}
-.feature{position:relative;display:block;width:100%;aspect-ratio:4/5;max-height:600px;border-radius:var(--r-xl);overflow:hidden;text-align:left;background:var(--bg-2);box-shadow:var(--shadow-2);animation:feature-in .8s cubic-bezier(.2,.7,.2,1) both}
-.feature-art{position:absolute;inset:0;display:flex;align-items:flex-end}
-.feature-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center top;transition:transform .6s ease}
-.feature:hover .feature-art img{transform:scale(1.025)}
-.feature::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,20,0) 50%,rgba(10,10,20,.55) 75%,rgba(10,10,20,.82))}
-.feature-copy{position:absolute;z-index:1;left:0;right:0;bottom:0;padding:22px;display:grid;gap:6px;color:#fff}
-.feature-tag{justify-self:start;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.18);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:5px 11px;border-radius:999px}
-.feature-copy strong{font-weight:800;font-size:clamp(26px,5.6vw,36px);line-height:1.08;letter-spacing:-.03em}
-.feature-meta{display:flex;flex-wrap:wrap;gap:4px 14px;color:rgba(255,255,255,.82);font-size:13.5px;font-weight:500}
-@keyframes feature-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .row{margin-top:46px}
 .row h2,.film-section h2{font-size:clamp(20px,3vw,24px);margin-bottom:14px}
 .row-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
@@ -293,3 +283,25 @@ body[data-view="quiz"] .tabbar,body[data-view="film"] .tabbar{display:none}
 @media (prefers-reduced-motion:reduce){
  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
+
+/* ---------- Parede de pôsteres em movimento (topo da home) ---------- */
+.poster-wall{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;height:420px;overflow:hidden;
+ -webkit-mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(transparent,#000 14%,#000 86%,transparent)}
+.wall-col{overflow:hidden}
+.wall-track{display:grid;gap:14px;animation:wall-up 46s linear infinite;will-change:transform}
+.wall-col:nth-child(2) .wall-track{animation-name:wall-down;animation-duration:54s}
+.wall-col:nth-child(3) .wall-track{animation-duration:40s;animation-delay:-12s}
+.poster-wall:hover .wall-track,.poster-wall:focus-within .wall-track{animation-play-state:paused}
+.wall-item{display:block;width:100%;border-radius:var(--r-md);overflow:hidden;box-shadow:var(--shadow-1)}
+.wall-art{position:relative;aspect-ratio:2/3;background:var(--bg-2);display:flex;align-items:flex-end}
+.wall-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s ease}
+.wall-art .art-title{font-size:12.5px;padding:8px}
+.wall-item:hover .wall-art img{transform:scale(1.04)}
+/* Cada trilho tem a lista duas vezes: deslocar metade (mais meio espaçamento) fecha o laço sem salto. */
+@keyframes wall-up{from{transform:translateY(0)}to{transform:translateY(calc(-50% - 7px))}}
+@keyframes wall-down{from{transform:translateY(calc(-50% - 7px))}to{transform:translateY(0)}}
+@media (min-width:720px){.poster-wall{height:520px;gap:18px}.wall-track{gap:18px}
+ @keyframes wall-up{from{transform:translateY(0)}to{transform:translateY(calc(-50% - 9px))}}
+ @keyframes wall-down{from{transform:translateY(calc(-50% - 9px))}to{transform:translateY(0)}}}
+@media (min-width:960px){.poster-wall{height:600px}}
+@media (prefers-reduced-motion:reduce){.wall-track{animation:none!important}}
