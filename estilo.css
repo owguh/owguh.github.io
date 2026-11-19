@@ -305,3 +305,59 @@ body[data-view="quiz"] .tabbar,body[data-view="film"] .tabbar{display:none}
  @keyframes wall-down{from{transform:translateY(calc(-50% - 9px))}to{transform:translateY(0)}}}
 @media (min-width:960px){.poster-wall{height:600px}}
 @media (prefers-reduced-motion:reduce){.wall-track{animation:none!important}}
+
+/* =====================================================================
+   Celular (revisão no iPhone)
+   ===================================================================== */
+/* Atalhos no cabeçalho; a barra inferior só existe no app instalado. */
+.topactions{display:flex;align-items:center;gap:6px;margin-left:auto}
+.ta-link{display:flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:999px;color:var(--text);font-size:14px;font-weight:650}
+.ta-link svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.ta-link.on{color:var(--accent);background:var(--accent-wash)}
+.ta-cta{height:38px;padding:0 16px;border-radius:999px;background:var(--accent);color:#fff;font-size:14px;font-weight:700}
+.ta-cta.on{background:var(--accent-2)}
+body[data-view="quiz"] .ta-cta,body[data-view="results"] .ta-cta{display:none}
+.tabbar{display:none}
+main,footer{padding-bottom:40px}
+@media (display-mode:standalone) and (max-width:959px){
+ .tabbar{display:grid}
+ .topactions{display:none}
+ main{padding-bottom:110px}
+ footer{padding-bottom:110px}
+ body[data-view="quiz"] .tabbar,body[data-view="film"] .tabbar{display:none}
+}
+@media (min-width:960px){.topactions{display:none}}
+
+/* Topo mais compacto */
+@media (max-width:719px){
+ .topinner{padding:10px var(--pad);gap:12px}
+ .wordmark{font-size:18px;gap:9px}
+ .wordmark img{width:28px;height:28px}
+ main{padding-top:18px}
+ .home-hero{gap:26px;padding-top:6px}
+ .hh-text h1{font-size:clamp(34px,10vw,44px)}
+ .hh-text .lead{font-size:16px;margin-top:14px}
+ .hh-text .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+ .hh-text .actions .btn{padding:0 12px;font-size:14.5px}
+ .hh-text .fine{margin-top:12px}
+ .row{margin-top:38px}
+ .film-backdrop{top:-80px}
+
+ /* Parede vira duas faixas horizontais em sentidos opostos */
+ .poster-wall{display:grid;grid-template-columns:none;grid-template-rows:auto auto;gap:12px;height:auto;margin:0 calc(-1 * var(--pad));
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent);mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent)}
+ .poster-wall .wall-col:nth-child(3){display:none}
+ .wall-track{display:flex;width:max-content;gap:12px;animation:wall-left 50s linear infinite}
+ .wall-col:nth-child(2) .wall-track{animation-name:wall-right;animation-duration:58s}
+ .wall-item{width:104px;flex:0 0 104px}
+ .wall-art .art-title{font-size:11.5px}
+ @keyframes wall-left{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 6px))}}
+ @keyframes wall-right{from{transform:translateX(calc(-50% - 6px))}to{transform:translateX(0)}}
+}
+@media (max-width:719px) and (prefers-reduced-motion:reduce){.wall-track{animation:none!important}}
+
+/* Cabeçalho em telas estreitas: o nome nunca encolhe; "Catálogo" vira só o ícone. */
+.wordmark{flex-shrink:0;white-space:nowrap}
+body[data-view="intro"] .ta-cta{display:none}
+@media (max-width:399px){.ta-link span{display:none}.ta-link{width:40px;padding:0;justify-content:center}}
+@media (max-width:359px){.hh-text .actions{grid-template-columns:1fr}}

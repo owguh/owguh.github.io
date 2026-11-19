@@ -282,8 +282,11 @@ function navActive(){
 function go(view){if(view==='quiz')return startQuiz(false);if(view==='catalog')state.catalogState=null;state.view=view;render();}
 function renderChrome(){
  document.body.classList.toggle('banca',BANCA);
- const nav=document.getElementById('topnav'),tab=document.getElementById('tabbar');
+ const nav=document.getElementById('topnav'),tab=document.getElementById('tabbar'),acts=document.getElementById('topactions');
  if(nav)nav.innerHTML=NAV.map(([v,l])=>`<button type="button" data-nav="${v}">${l}</button>`).join('')+`<button type="button" data-nav="how">Como funciona</button>`;
+ // Celular no navegador: atalhos no cabeçalho (a barra inferior disputaria espaço com a barra do Safari/Chrome).
+ if(acts)acts.innerHTML=`<button type="button" class="ta-link" data-nav="catalog" aria-label="Catálogo">${ICON.grid}<span>Catálogo</span></button><button type="button" class="ta-cta" data-nav="quiz">Descobrir</button>`;
+ // App instalado (tela inicial): barra inferior, mostrada só nesse modo pelo CSS.
  if(tab)tab.innerHTML=NAV.map(([v,l,i])=>`<button type="button" data-nav="${v}">${ICON[i]}<span>${l}</span></button>`).join('');
  document.querySelectorAll('[data-nav]').forEach(el=>el.onclick=()=>go(el.dataset.nav));
  const home=document.getElementById('wordmark');if(home)home.onclick=()=>go('intro');
@@ -313,7 +316,7 @@ function renderIntro(){
   ?'Um sistema especialista entrevista você sobre gênero, atmosfera, narrativa, ritmo e época, e recomenda filmes explicando cada regra aplicada — sem servidor e sem internet.'
   :'Responda algumas perguntas e receba três filmes escolhidos para você, cada um com o motivo da escolha.';
  const banca=BANCA?`<section class="banca-panel"><h2>Para a apresentação</h2><dl class="figures"><div><dt>Filmes</dt><dd>${D.filmes.length}</dd></div><div><dt>Regras de recomendação</dt><dd>${D.regras.length}</dd></div><div><dt>Regras de perfil</dt><dd>${D.perfis.length}</dd></div></dl><p>Esta edição roda inteira no aparelho: não precisa de FastAPI, computador ligado, chave do TMDB nem login. Pôsteres e metadados são preparados antes da publicação, sem expor o token.</p><div class="actions"><button class="btn" id="how">Como o sistema decide</button><button class="btn" id="stress">Testar com 10 mil registros</button></div></section>`:'';
- APP.innerHTML=`<section class="home-hero"><div class="hh-text"><h1>O filme certo para esta noite.</h1><p class="lead">${lead}</p><div class="actions"><button class="btn primary" id="start">Descobrir meu filme</button><button class="btn quiet" id="catalog">Explorar o catálogo</button></div><p class="fine">Sem cadastro. Funciona sem internet.</p></div>${parede}</section>
+ APP.innerHTML=`<section class="home-hero"><div class="hh-text"><h1>O filme certo para esta noite.</h1><p class="lead">${lead}</p><div class="actions"><button class="btn primary" id="start">Descobrir meu filme</button><button class="btn quiet" id="catalog">Ver catálogo</button></div><p class="fine">Sem cadastro. Funciona sem internet.</p></div>${parede}</section>
  <section class="row"><h2>Por gênero</h2><div class="genre-strip">${generos.map(([n,v])=>`<button type="button" class="gchip" data-genre="${v}">${esc(n)}</button>`).join('')}</div></section>
  ${classicos.length?`<section class="row"><div class="row-head"><h2>Clássicos da curadoria</h2><button type="button" class="link" id="see-all">Ver catálogo</button></div>${rail(classicos)}</section>`:''}
  <section class="row"><h2>Mais bem avaliados</h2>${rail(top.filter(f=>!classicos.includes(f)).slice(0,14))}</section>

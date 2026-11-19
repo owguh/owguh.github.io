@@ -1,5 +1,5 @@
-const CACHE='cineexpert-mobile-v5.0-claro';
-const ASSETS = ['./', './index.html','./estilo.css?v=500','./dados.js?v=500','./metadados.js?v=500','./motor.js?v=500','./teste_escala.js?v=460','./aplicativo.js?v=500','./fontes/plus-jakarta-sans-latin-wght-normal.woff2','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
+const CACHE='cineexpert-mobile-v5.1';
+const ASSETS = ['./', './index.html','./estilo.css?v=510','./dados.js?v=510','./metadados.js?v=510','./motor.js?v=510','./teste_escala.js?v=460','./aplicativo.js?v=510','./fontes/plus-jakarta-sans-latin-wght-normal.woff2','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())));
 // Capas: primeiro o cache (não mudam). Páginas, scripts e dados: primeiro a rede, para que um
