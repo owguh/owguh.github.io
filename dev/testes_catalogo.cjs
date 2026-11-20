@@ -29,7 +29,7 @@ for(const f of F){
     check(f.atmosferas.length>0&&f.narrativas.length>0,`${q}: sem atmosfera ou narrativa`);
     for(const t of f.tags)check(ROTULOS[t]||regraTags.has(t),`${q}: etiqueta sem rótulo ${t}`);
   }
-  if(f.origem==='automatica'||f.origem==='curada'||f.fonte_classificacao==='movielens'){
+  if(f.origem==='automatica'||f.origem==='curada'||f.fonte_classificacao){
     check(f.atmosferas.every(a=>ATM_G[f.genero].includes(a)),`${q}: atmosfera fora das opções do gênero`);
     check(f.narrativas.every(n=>NAR_G[f.genero].includes(n)),`${q}: narrativa fora das opções do gênero`);
     check(f.tem_reviravolta===f.tags.includes('reviravolta')||f.genero!=='suspense',`${q}: etiqueta de reviravolta inconsistente`);
