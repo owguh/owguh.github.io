@@ -12,7 +12,8 @@ assert(films.length>=200);
 assert.equal(new Set(films.map(f=>f.id)).size,films.length);
 assert.equal(D.regras.length,45);assert.equal(D.perfis.length,25);
 assert(curated.filter(f=>f.classificacao_status==='pendente').length<=28); // a curadoria só diminui
-assert(curated.filter(f=>f.classificacao_status==='preliminar').length<=48);
+// O importador do MovieLens pode promover 'pendente' a 'preliminar'; a soma das duas nunca cresce.
+assert(curated.filter(f=>['pendente','preliminar'].includes(f.classificacao_status)).length<=76);
 const pref={formato:'qualquer',foco:'indiferente',atmosfera:'indiferente',narrativa:'indiferente',ritmo:'indiferente',reviravolta:'indiferente',epoca:'qualquer'};
 for(const genre of ['suspense','terror','animacao','ficcao_cientifica','drama','comedia','acao','romance']){
  const out=E.recomendar({...pref,genero:genre},films.length);
@@ -21,8 +22,10 @@ for(const genre of ['suspense','terror','animacao','ficcao_cientifica','drama','
  assert(out.lista.every(f=>!films.find(x=>x.id===f.id)?.classificacao_status?.includes('pendente')));
 }
 const pend=films.find(f=>f.classificacao_status==='pendente');
-assert(E.filtrarCatalogo(films,pend.titulo).some(f=>f.id===pend.id));
-assert(!E.recomendar({...pref,genero:'qualquer'},films.length).lista.some(f=>f.id===pend.id));
+if(pend){
+ assert(E.filtrarCatalogo(films,pend.titulo).some(f=>f.id===pend.id));
+ assert(!E.recomendar({...pref,genero:'qualquer'},films.length).lista.some(f=>f.id===pend.id));
+}
 const top=E.recomendar({...pref,genero:'comedia',foco:'humor_leve',atmosfera:'leve'},3);
 assert(top.lista.length===3);
 // Anterior comportamento legado mantido: 3 resultados sem dependência de rede

@@ -61,6 +61,7 @@ def main():
                   'classico_editorial':bool(r.get('classico_editorial'))})
         if f.get('origem')=='automatica':f['origem']='curada'
         if f.get('classificacao_status') in ('preliminar','pendente'):f.pop('classificacao_status')
+        f.pop('fonte_classificacao',None);f.pop('genero_sugerido',None)
         aplicados+=1
     print(f'Revisões no arquivo: {len(revisoes)} · aplicadas: {aplicados} · gênero trocado: {mudancas["genero"]} · reviravolta trocada: {mudancas["reviravolta"]}')
     for p in problemas[:30]:print('  não aplicado: '+p)
