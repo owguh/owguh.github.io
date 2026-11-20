@@ -342,7 +342,7 @@ function renderIntro(){
  const lead=BANCA
   ?'Um sistema especialista entrevista você sobre gênero, atmosfera, narrativa, ritmo e época, e recomenda filmes explicando cada regra aplicada — sem servidor e sem internet.'
   :'Responda algumas perguntas e receba três filmes escolhidos para você, cada um com o motivo da escolha.';
- const banca=BANCA?`<section class="banca-panel"><h2>Para a apresentação</h2><dl class="figures"><div><dt>Filmes</dt><dd>${D.filmes.length}</dd></div><div><dt>Regras de recomendação</dt><dd>${D.regras.length}</dd></div><div><dt>Regras de perfil</dt><dd>${D.perfis.length}</dd></div></dl><p>Esta edição roda inteira no aparelho: não precisa de FastAPI, computador ligado, chave do TMDB nem login. Pôsteres e metadados são preparados antes da publicação, sem expor o token.</p><div class="actions"><button class="btn" id="how">Como o sistema decide</button><button class="btn" id="stress">Testar com 10 mil registros</button></div></section>`:'';
+ const banca=BANCA?`<section class="banca-panel"><h2>Para a apresentação</h2><dl class="figures"><div><dt>Filmes</dt><dd>${D.filmes.length}</dd></div><div><dt>Regras de recomendação</dt><dd>${D.regras.length}</dd></div><div><dt>Regras de perfil</dt><dd>${D.perfis.length}</dd></div></dl><p>Esta edição roda inteira no aparelho: não precisa de FastAPI, computador ligado, chave do TMDB nem login. Pôsteres e metadados são preparados antes da publicação, sem expor o token.</p><div class="actions"><button class="btn" id="how">Como o sistema decide</button><button class="btn" id="stress">Testar com 10 mil registros</button><button class="btn" id="curadoria">Curadoria dos filmes</button></div></section>`:'';
  APP.innerHTML=`<section class="home-hero"><div class="hh-text"><h1>O filme certo para esta noite.</h1><p class="lead">${lead}</p><div class="actions"><button class="btn primary" id="start">Descobrir meu filme</button><button class="btn quiet" id="catalog">Ver catálogo</button></div><p class="fine">Sem cadastro. Funciona sem internet.</p></div>${parede}</section>
  <section class="row"><h2>Por gênero</h2><div class="genre-strip">${generos.map(([n,v])=>`<button type="button" class="gchip" data-genre="${v}">${esc(n)}</button>`).join('')}</div></section>
  ${classicos.length?`<section class="row"><div class="row-head"><h2>Clássicos da curadoria</h2><button type="button" class="link" id="see-all">Ver catálogo</button></div>${rail(classicos)}</section>`:''}
@@ -354,7 +354,7 @@ function renderIntro(){
  document.getElementById('catalog').onclick=()=>go('catalog');
  const all=document.getElementById('see-all');if(all)all.onclick=()=>go('catalog');
  APP.querySelectorAll('[data-genre]').forEach(el=>el.onclick=()=>{state.catalogState={term:'',genre:el.dataset.genre,pagina:0};state.view='catalog';render();});
- if(BANCA){document.getElementById('how').onclick=()=>go('how');document.getElementById('stress').onclick=()=>go('stress');}
+ if(BANCA){document.getElementById('how').onclick=()=>go('how');document.getElementById('stress').onclick=()=>go('stress');document.getElementById('curadoria').onclick=()=>go('curadoria');}
 }
 function renderHow(){
  const passos=[
@@ -583,10 +583,92 @@ function renderStress(){
    finally{btn.disabled=false;}
  };
 }
-function render(){try{if(state.view==='intro')renderIntro();else if(state.view==='quiz')renderQuiz();else if(state.view==='results')renderResults();else if(state.view==='catalog')renderCatalog();else if(state.view==='film')renderFilm();else if(state.view==='stress')renderStress();else renderHow();enhanceRails(APP);navActive();syncHistory();window.scrollTo(0,0);}catch(e){APP.innerHTML='<div class="empty"><h2>Não foi possível processar as regras</h2><p>'+esc(e.message)+'</p><button class="btn" onclick="location.reload()">Recarregar</button></div>';}}
+// ---------------------------------------------------------------------------
+// Curadoria: revisar, um por um, os filmes com classificação automática (e os que aguardam
+// curadoria). As revisões ficam salvas neste aparelho; o botão "Baixar arquivo" gera o JSON
+// que dev/aplicar_curadoria.py aplica a dados.js. Abrir: ?curadoria=1 ou pelo modo apresentação.
+// ---------------------------------------------------------------------------
+const CUR_KEY='cineexpert-curadoria-v1';
+const cur={revisoes:{},fila:[],pos:0,filtro:'todos',foco:'conhecidos',rascunho:null};
+function curLoad(){try{cur.revisoes=JSON.parse(store.get(CUR_KEY)||'{}')||{};}catch(e){cur.revisoes={};}}
+function curSave(){store.set(CUR_KEY,Object.keys(cur.revisoes).length?JSON.stringify(cur.revisoes):null);}
+const perfilDoFoco=(g,foco)=>perfilTag(g,foco);
+const focoDoPerfil=(g,tags)=>{const r=D.perfis.find(p=>p.se.genero===g&&tags.includes(p.entao.perfil));return r?r.se.foco:'';};
+function curFila(){
+ const base=D.filmes.filter(f=>(f.origem==='automatica'||f.classificacao_status==='pendente')&&!cur.revisoes[f.id]);
+ let lista=cur.filtro==='todos'?base:cur.filtro==='pendentes'?base.filter(f=>f.classificacao_status==='pendente'):base.filter(f=>f.genero===cur.filtro);
+ if(cur.foco==='sem-subgenero')lista=lista.filter(f=>!D.perfis.some(p=>f.tags.includes(p.entao.perfil)));
+ // Primeiro os aguardando curadoria, depois os mais conhecidos (nota no TMDB).
+ return lista.sort((a,b)=>(b.classificacao_status==='pendente')-(a.classificacao_status==='pendente')||rating(b)-rating(a)||a.titulo.localeCompare(b.titulo,'pt-BR'));
+}
+function curRascunho(f){
+ return {genero:f.genero,perfil:f.tags.find(t=>D.perfis.some(p=>p.entao.perfil===t&&p.se.genero===f.genero))||null,
+   atmosferas:(f.atmosferas||[]).filter(x=>(ATM_G[f.genero]||[]).includes(x)),narrativas:(f.narrativas||[]).filter(x=>(NAR_G[f.genero]||[]).includes(x)),
+   ritmo:['lento','moderado','rapido'].includes(f.ritmo)?f.ritmo:'',tem_reviravolta:!!f.tem_reviravolta,classico_editorial:!!f.classico_editorial};
+}
+function renderCuradoria(){
+ curLoad();
+ cur.fila=curFila();if(cur.pos>=cur.fila.length)cur.pos=Math.max(0,cur.fila.length-1);
+ const f=cur.fila[cur.pos],feitos=Object.keys(cur.revisoes).length;
+ const filtros=[['todos','Todos'],['pendentes','Aguardando curadoria'],...GER.filter(x=>x[1]!=='qualquer').map(([n,v])=>[v,n])];
+ const cab=`<div class="cur-head"><div><h1>Curadoria</h1><p class="lead">Revise a classificação de cada filme e aprove. ${feitos} revisado${feitos===1?'':'s'} neste aparelho, ${cur.fila.length} na fila.</p></div><div class="actions"><button class="btn primary" id="cur-baixar" ${feitos?'':'disabled'}>Baixar arquivo (${feitos})</button><button class="btn quiet" id="cur-limpar" ${feitos?'':'disabled'}>Limpar revisões</button></div></div>
+ <div class="genre-strip" role="group" aria-label="Filtrar a fila">${filtros.map(([v,n])=>`<button type="button" class="gchip" data-cf="${v}" aria-pressed="${cur.filtro===v}">${esc(n)}</button>`).join('')}<button type="button" class="gchip" data-cfoco="sem-subgenero" aria-pressed="${cur.foco==='sem-subgenero'}">Só sem subgênero</button></div>`;
+ if(!f){APP.innerHTML=`<section class="curadoria">${cab}<div class="empty"><h2>Fila vazia</h2><p>${feitos?'Baixe o arquivo e aplique com dev/aplicar_curadoria.py.':'Nenhum filme com classificação automática neste filtro.'}</p></div></section>`;return curBind(null);}
+ if(!cur.rascunho||cur.rascunho.id!==f.id)cur.rascunho={id:f.id,...curRascunho(f)};
+ const r=cur.rascunho,g=r.genero,m=META[f.id]||{};
+ const chips=(grupo,opcoes,ativos)=>opcoes.map(([v,n])=>`<button type="button" class="gchip" data-grp="${grupo}" data-v="${v}" aria-pressed="${ativos.includes(v)}">${esc(n)}</button>`).join('');
+ const focos=(FOC[g]?.[1]||[]).filter(x=>x[1]!=='indiferente').map(([n,v])=>[perfilDoFoco(g,v)||'',n]).filter(x=>x[0]);
+ const pronto=r.atmosferas.length&&r.narrativas.length&&r.ritmo;
+ APP.innerHTML=`<section class="curadoria">${cab}
+ <article class="cur-card"><div class="cur-film">${posterArt(f,'cur-art',true)}<div><p class="cur-count">${cur.pos+1} de ${cur.fila.length}${f.classificacao_status==='pendente'?' · aguardando curadoria':''}</p><h2>${esc(f.titulo)}</h2><p class="film-meta">${metaSpans([labelGenero(f.genero),String(f.ano),m.runtime?`${m.runtime} min`:'',m.director?`Direção de ${m.director}`:''])}${nota(f)?`<span class="film-rate">${ICON.star}${nota(f)}</span>`:''}</p><p class="cur-synopsis" id="cur-synopsis">Carregando sinopse…</p>${m.tmdb_id?`<a class="link" href="https://www.themoviedb.org/movie/${Number(m.tmdb_id)}" target="_blank" rel="noopener noreferrer">Abrir no TMDB</a>`:''}</div></div>
+ <div class="cur-form">
+  <fieldset><legend>Gênero</legend><div class="cur-chips">${chips('genero',GER.filter(x=>x[1]!=='qualquer').map(([n,v])=>[v,n]),[g])}</div></fieldset>
+  <fieldset><legend>Subgênero</legend><div class="cur-chips">${chips('perfil',[['','Nenhum'],...focos],[r.perfil||''])}</div></fieldset>
+  <fieldset><legend>Atmosfera <small>até 2</small></legend><div class="cur-chips">${chips('atmosferas',(ATM_G[g]||[]).map(v=>[v,ATMROT[v]]),r.atmosferas)}</div></fieldset>
+  <fieldset><legend>Narrativa <small>até 2</small></legend><div class="cur-chips">${chips('narrativas',(NAR_G[g]||[]).map(v=>[v,ROT[v]]),r.narrativas)}</div></fieldset>
+  <fieldset><legend>Ritmo</legend><div class="cur-chips">${chips('ritmo',RIT.filter(x=>x[1]!=='indiferente').map(([n,v])=>[v,n]),[r.ritmo])}</div></fieldset>
+  <fieldset><legend>Outros</legend><div class="cur-chips">${chips('tem_reviravolta',[['1','Tem grandes reviravoltas']],r.tem_reviravolta?['1']:[])}${chips('classico_editorial',[['1','Clássico da curadoria']],r.classico_editorial?['1']:[])}</div></fieldset>
+  <div class="cur-actions"><button class="btn quiet" id="cur-prev" ${cur.pos?'':'disabled'}>Anterior</button><button class="btn" id="cur-skip">Pular</button><button class="btn primary" id="cur-ok" ${pronto?'':'disabled'}>Aprovar</button></div>
+  <p class="fine">Atalhos: Enter aprova, → pula, ← volta. As revisões ficam salvas neste aparelho até você baixar o arquivo.</p>
+ </div></article></section>`;
+ carregarSinopse(f.id).then(x=>{const el=document.getElementById('cur-synopsis');if(el&&cur.rascunho&&cur.rascunho.id===f.id)el.textContent=x.o||'Sem sinopse.';}).catch(()=>{const el=document.getElementById('cur-synopsis');if(el)el.textContent='Sinopse indisponível sem internet.';});
+ curBind(f);
+}
+function curBind(f){
+ APP.querySelectorAll('[data-cf]').forEach(el=>el.onclick=()=>{cur.filtro=el.dataset.cf;cur.pos=0;cur.rascunho=null;renderCuradoria();});
+ APP.querySelectorAll('[data-cfoco]').forEach(el=>el.onclick=()=>{cur.foco=cur.foco==='sem-subgenero'?'conhecidos':'sem-subgenero';cur.pos=0;cur.rascunho=null;renderCuradoria();});
+ const baixar=document.getElementById('cur-baixar');
+ if(baixar)baixar.onclick=()=>{
+   const conteudo=JSON.stringify({gerado_em:new Date().toISOString(),total:Object.keys(cur.revisoes).length,filmes:cur.revisoes},null,1);
+   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([conteudo],{type:'application/json'}));a.download='cineexpert-curadoria.json';
+   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+   toast('Arquivo baixado. Aplique com dev/aplicar_curadoria.py.');
+ };
+ const limpar=document.getElementById('cur-limpar');
+ if(limpar)limpar.onclick=()=>{if(limpar.dataset.confirm){cur.revisoes={};curSave();cur.rascunho=null;cur.pos=0;renderCuradoria();toast('Revisões apagadas deste aparelho.');}else{limpar.dataset.confirm='1';limpar.textContent='Toque de novo para apagar';}};
+ document.onkeydown=null;
+ if(!f)return;
+ const r=cur.rascunho;
+ APP.querySelectorAll('[data-grp]').forEach(el=>el.onclick=()=>{
+   const grp=el.dataset.grp,v=el.dataset.v;
+   if(grp==='genero'&&v!==r.genero){r.genero=v;r.perfil=null;r.atmosferas=r.atmosferas.filter(x=>ATM_G[v].includes(x));r.narrativas=r.narrativas.filter(x=>NAR_G[v].includes(x));}
+   else if(grp==='perfil')r.perfil=v||null;
+   else if(grp==='atmosferas'||grp==='narrativas'){const lst=r[grp];r[grp]=lst.includes(v)?lst.filter(x=>x!==v):[...lst,v].slice(-2);}
+   else if(grp==='ritmo')r.ritmo=v;
+   else if(grp==='tem_reviravolta'||grp==='classico_editorial')r[grp]=!r[grp];
+   const y=window.scrollY;renderCuradoria();window.scrollTo(0,y);
+ });
+ const aprovar=()=>{if(!(r.atmosferas.length&&r.narrativas.length&&r.ritmo))return;const {id,...dados}=r;cur.revisoes[id]={...dados,revisado_em:new Date().toISOString().slice(0,10)};curSave();cur.rascunho=null;renderCuradoria();};
+ const pular=()=>{if(cur.pos<cur.fila.length-1){cur.pos++;cur.rascunho=null;renderCuradoria();}};
+ const voltar=()=>{if(cur.pos>0){cur.pos--;cur.rascunho=null;renderCuradoria();}};
+ document.getElementById('cur-ok').onclick=aprovar;document.getElementById('cur-skip').onclick=pular;document.getElementById('cur-prev').onclick=voltar;
+ document.onkeydown=e=>{if(state.view!=='curadoria'||e.target.closest('input,textarea'))return;if(e.key==='Enter'&&!e.target.closest('button')){e.preventDefault();aprovar();}else if(e.key==='ArrowRight')pular();else if(e.key==='ArrowLeft')voltar();};
+}
+function render(){try{if(state.view==='intro')renderIntro();else if(state.view==='quiz')renderQuiz();else if(state.view==='results')renderResults();else if(state.view==='catalog')renderCatalog();else if(state.view==='film')renderFilm();else if(state.view==='stress')renderStress();else if(state.view==='curadoria')renderCuradoria();else renderHow();enhanceRails(APP);navActive();syncHistory();window.scrollTo(0,0);}catch(e){APP.innerHTML='<div class="empty"><h2>Não foi possível processar as regras</h2><p>'+esc(e.message)+'</p><button class="btn" onclick="location.reload()">Recarregar</button></div>';}}
 // Tudo que depende do navegador fica aqui, para que os testes em Node possam carregar o arquivo.
 function init(){
  readMode();loadSeen();
+ try{if(new URLSearchParams(location.search).get('curadoria')==='1')state.view='curadoria';}catch(e){}
  window.addEventListener('popstate',onPopState);
  window.addEventListener('online',renderChrome);window.addEventListener('offline',renderChrome);
  if('serviceWorker' in navigator&&['https:','http:'].includes(location.protocol)&&!window.CINE_PROTOTIPO){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}

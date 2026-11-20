@@ -5,13 +5,14 @@ for(const name of ['dados.js','metadados.js','motor.js'])vm.runInContext(fs.read
 const D=vm.runInContext('CINE_DATA',ctx),E=vm.runInContext('CINE_ENGINE',ctx);
 const films=JSON.parse(JSON.stringify(D.filmes));
 // Os 200 filmes curados à mão continuam intactos; filmes automáticos (origem 'automatica') podem ser acrescentados.
-const curated=films.filter(f=>f.origem!=='automatica');
+// Os 200 originais não têm "origem"; filmes automáticos revisados na curadoria viram "curada".
+const curated=films.filter(f=>!f.origem);
 assert.equal(curated.length,200);
 assert(films.length>=200);
 assert.equal(new Set(films.map(f=>f.id)).size,films.length);
 assert.equal(D.regras.length,45);assert.equal(D.perfis.length,25);
-assert.equal(curated.filter(f=>f.classificacao_status==='pendente').length,28);
-assert.equal(curated.filter(f=>f.classificacao_status==='preliminar').length,48);
+assert(curated.filter(f=>f.classificacao_status==='pendente').length<=28); // a curadoria só diminui
+assert(curated.filter(f=>f.classificacao_status==='preliminar').length<=48);
 const pref={formato:'qualquer',foco:'indiferente',atmosfera:'indiferente',narrativa:'indiferente',ritmo:'indiferente',reviravolta:'indiferente',epoca:'qualquer'};
 for(const genre of ['suspense','terror','animacao','ficcao_cientifica','drama','comedia','acao','romance']){
  const out=E.recomendar({...pref,genero:genre},films.length);
@@ -33,4 +34,5 @@ vm.runInContext(prefix,ctx);
 vm.runInContext('setAnswer("genero","comedia");setAnswer("foco","humor_leve")',ctx);
 const atmosphere=JSON.parse(vm.runInContext('JSON.stringify(questions().find(q=>q.key==="atmosfera").opts.map(x=>x[1]))',ctx));
 assert(!atmosphere.includes('sombria')&&!atmosphere.includes('tensa'));
-console.log(`PASSOU: ${films.length} filmes (200 curados: 172 recomendáveis, 48 preliminares, 28 pendentes; ${films.length-200} automáticos), 70 regras, entrevista adaptativa e cards desktop.`);
+const nAuto=films.filter(f=>f.origem==='automatica').length,nRev=films.filter(f=>f.origem==='curada').length,nPend=curated.filter(f=>f.classificacao_status==='pendente').length;
+console.log(`PASSOU: ${films.length} filmes (200 originais, ${nPend} aguardando curadoria; ${nAuto} automáticos; ${nRev} revisados na curadoria), 70 regras, entrevista adaptativa e cards desktop.`);
