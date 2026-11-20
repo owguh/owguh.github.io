@@ -35,7 +35,18 @@ def main():
     a=ap.parse_args()
     DPRE='const CINE_DATA = '
     dados=ler_js(ROOT/'dados.js',DPRE)
-    pacote=json.loads(pathlib.Path(a.arquivo).read_text(encoding='utf-8'))
+    arq=pathlib.Path(a.arquivo).expanduser()
+    if not arq.exists():
+        # O navegador renomeia downloads repetidos ("cineexpert-curadoria (1).json"): usa o mais recente.
+        candidatos=sorted(arq.parent.glob('cineexpert-curadoria*.json'),key=lambda x:x.stat().st_mtime,reverse=True) if arq.parent.exists() else []
+        if candidatos:
+            arq=candidatos[0];print(f'Usando o arquivo mais recente: {arq.name}')
+        else:
+            print(f'Arquivo não encontrado: {arq}')
+            print('Ele é criado na tela de curadoria (https://owguh.github.io/?curadoria=1): revise alguns filmes e toque em "Baixar arquivo".')
+            print('Depois rode este comando de novo, com o caminho onde o navegador salvou o arquivo.')
+            return
+    pacote=json.loads(arq.read_text(encoding='utf-8'))
     revisoes=pacote.get('filmes',pacote)
     por_id={f['id']:f for f in dados['filmes']}
     perfis={}
