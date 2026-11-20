@@ -29,11 +29,12 @@ for(const f of F){
     check(f.atmosferas.length>0&&f.narrativas.length>0,`${q}: sem atmosfera ou narrativa`);
     for(const t of f.tags)check(ROTULOS[t]||regraTags.has(t),`${q}: etiqueta sem rótulo ${t}`);
   }
-  if(f.origem==='automatica'||f.origem==='curada'){
+  if(f.origem==='automatica'||f.origem==='curada'||f.fonte_classificacao==='movielens'){
     check(f.atmosferas.every(a=>ATM_G[f.genero].includes(a)),`${q}: atmosfera fora das opções do gênero`);
     check(f.narrativas.every(n=>NAR_G[f.genero].includes(n)),`${q}: narrativa fora das opções do gênero`);
     check(f.tem_reviravolta===f.tags.includes('reviravolta')||f.genero!=='suspense',`${q}: etiqueta de reviravolta inconsistente`);
-    check(M[f.id]&&M[f.id].poster,`${q}: filme automático sem metadados`);
+    check(M[f.id]&&M[f.id].poster||!f.origem,`${q}: filme automático sem metadados`);
+    check(!f.genero_sugerido||(ATM_G[f.genero_sugerido]&&f.genero_sugerido!==f.genero),`${q}: genero_sugerido inválido`);
   }
   if(M[f.id]&&M[f.id].poster)check(fs.existsSync(path.join(dir,'capas',f.id+'.jpg')),`${q}: capa marcada mas arquivo capas/${f.id}.jpg não existe`);
 }

@@ -112,3 +112,21 @@ git commit -m "Curadoria: N filmes revisados"
 git push
 ```
 O script refaz as etiquetas das regras com a mesma função da classificação automática e marca os filmes revisados como `"origem": "curada"`, o que tira o aviso de classificação automática da ficha. Os que aguardavam curadoria passam a entrar nas recomendações. Depois de aplicar, use **Limpar revisões** na tela de curadoria para começar uma nova rodada.
+
+## Classificação com o MovieLens (Tag Genome)
+
+Em vez de revisar 1.800 filmes à mão, dá para reclassificá-los com o Tag Genome do MovieLens: notas de 0 a 1 que a comunidade do MovieLens deu a mais de mil etiquetas ("twist ending", "dark", "tense", "slow", "feel-good", "detective"...). O script `dev/importar_movielens.py` traduz essas notas para atmosfera, narrativa, ritmo, reviravolta e subgênero.
+
+1. Baixe o **MovieLens 25M** (`ml-25m.zip`, ~250 MB) em https://grouplens.org/datasets/movielens/25m/ . Não descompacte, não coloque no repositório.
+2. Simule: `uv run --no-project python dev/importar_movielens.py "C:\Users\voce\Downloads\ml-25m.zip" --simular`
+3. Grave: o mesmo comando sem `--simular`.
+4. Teste: `node dev/testes_catalogo.cjs` e `node dev/testes_4_4.cjs`; depois commit de `dados.js` e `dev/movielens_relatorio.csv`.
+
+Regras:
+- Só muda filmes com `"origem": "automatica"` e os aguardando curadoria (que passam a "preliminar" e entram nas recomendações). Filmes curados à mão não são tocados.
+- O gênero nunca muda sozinho. Quando o MovieLens indica outro gênero com força, o filme recebe `genero_sugerido` e aparece no filtro **Gênero a revisar** da tela de curadoria.
+- O MovieLens 25M cobre filmes até 2019; os mais recentes ficam com a classificação automática anterior.
+- A ficha do filme passa a dizer que as características vêm do MovieLens.
+- Aprovar um filme na curadoria remove `fonte_classificacao` e `genero_sugerido`.
+
+Uso não comercial/acadêmico. Cite: Jesse Vig, Shilad Sen e John Riedl. 2012. *The Tag Genome: Encoding Community Knowledge to Support Novel Interaction*. ACM TiiS 2(3). E: F. Maxwell Harper e Joseph A. Konstan. 2015. *The MovieLens Datasets: History and Context*. ACM TiiS 5(4).

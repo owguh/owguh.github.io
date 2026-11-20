@@ -6,3 +6,7 @@ env/
 # Arquivos locais
 __pycache__/
 .venv/
+
+# MovieLens (não publicar)
+ml-25m/
+ml-25m.zip
