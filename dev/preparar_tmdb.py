@@ -17,11 +17,18 @@ def token_from(path):
 
 def get_json(url,token):
     req=urllib.request.Request(url,headers={'Authorization':'Bearer '+token,'Accept':'application/json','User-Agent':'CineExpertAcademico/4.3'})
-    for attempt in range(3):
+    # Execuções longas (milhares de filmes) esbarram no limite do TMDB e em quedas de rede:
+    # espera o tempo pedido (Retry-After) ou cada vez mais, e tenta até 6 vezes.
+    for attempt in range(6):
         try:
-            with urllib.request.urlopen(req,timeout=20) as rsp:return json.load(rsp)
+            with urllib.request.urlopen(req,timeout=25) as rsp:return json.load(rsp)
         except urllib.error.HTTPError as e:
-            if e.code in (429,500,502,503) and attempt<2:time.sleep(2*(attempt+1));continue
+            if e.code in (429,500,502,503,504) and attempt<5:
+                wait=e.headers.get('Retry-After') if e.headers else None
+                time.sleep(float(wait) if wait and wait.replace('.','',1).isdigit() else 2*(attempt+1));continue
+            raise
+        except (urllib.error.URLError,TimeoutError,ConnectionError):
+            if attempt<5:time.sleep(3*(attempt+1));continue
             raise
 
 def norm(s):
@@ -123,5 +130,7 @@ def main():
         print('Não associados (revisão manual — grave o tmdb_id certo em dados.js):')
         for x in notfound:print('  - '+x)
     if errors:print('Erros: '+str(errors[:5]))
-    print('Depois faça commit de capas/ e metadados.js. Nunca publique seu .env nem o token.')
+    from dividir_metadados import dividir
+    dividir(ROOT)
+    print('Depois faça commit de capas/, metadados.js e sinopses/. Nunca publique seu .env nem o token.')
 if __name__=='__main__':main()

@@ -179,20 +179,53 @@ def main():
     usados_tit={(norm(f['titulo']),f['ano']) for f in filmes}|{(norm(f.get('busca_tmdb','')),f['ano']) for f in filmes}
     ids={f['id'] for f in filmes}
     hoje=datetime.date.today().isoformat()
-    novos=[];novos_meta={};relatorio=[];pulados=0
+    novos=[];novos_meta={};relatorio=[];pulados=0;salvos=0
+    proxima_pagina={g:1 for g,_ in GENEROS};esgotado=set()
+    rel=ROOT/'dev'/'expansao_relatorio.csv'
     (ROOT/'capas').mkdir(exist_ok=True)
-    for gen,filtro in GENEROS:
-        atual=sum(1 for f in filmes if f['genero']==gen)+sum(1 for f in novos if f['genero']==gen)
-        precisa=min(cota-atual,faltam-len(novos))
-        page=1
-        print(f'{gen}: {atual} no catálogo, buscando {max(precisa,0)} novos...')
-        while precisa>0 and page<=40:
+
+    def baixar_capa(caminho,destino):
+        for tentativa in range(4):
+            try:
+                req=urllib.request.Request('https://image.tmdb.org/t/p/w185'+caminho,headers={'User-Agent':'CineExpertAcademico/4.6'})
+                with urllib.request.urlopen(req,timeout=25) as rsp:raw=rsp.read(600_001)
+                if len(raw)>600_000 or raw[:2]!=b'\xff\xd8':return False
+                destino.write_bytes(raw);return True
+            except (urllib.error.URLError,TimeoutError,ConnectionError):
+                if tentativa==3:raise
+                time.sleep(3*(tentativa+1))
+
+    def salvar(final=False):
+        """Grava o que já foi coletado. Chamado a cada 200 filmes, ao interromper e no fim:
+        se a execução cair, basta rodar de novo, que ela continua de onde parou."""
+        nonlocal salvos
+        if a.simular or len(novos)==salvos:return
+        import csv
+        dados['filmes']=filmes+novos;meta.update(novos_meta)
+        (ROOT/'dados.js').write_text(DPRE+json.dumps(dados,ensure_ascii=False,separators=(',',':'))+';\n',encoding='utf-8')
+        (ROOT/'metadados.js').write_text(MPRE+json.dumps(meta,ensure_ascii=False,separators=(',',':'))+';\n',encoding='utf-8')
+        novo_arquivo=not rel.exists()
+        with rel.open('a',newline='',encoding='utf-8-sig') as fh:
+            w=csv.writer(fh,delimiter=';')
+            if novo_arquivo:w.writerow(['id','titulo','ano','genero','subgenero','atmosferas','narrativas','ritmo','reviravolta','palavras_chave'])
+            w.writerows(relatorio[salvos:])
+        from dividir_metadados import dividir
+        dividir(ROOT,verbose=final)
+        salvos=len(novos)
+        if not final:print(f'  progresso salvo: {len(filmes)+len(novos)} filmes no catálogo')
+
+    def coletar(gen,filtro,limite):
+        """Adiciona até `limite` filmes do gênero, continuando da página onde parou."""
+        nonlocal pulados
+        adicionados=0
+        while adicionados<limite and proxima_pagina[gen]<=500 and gen not in esgotado:
             q={'language':'pt-BR','sort_by':'vote_count.desc','include_adult':'false','vote_count.gte':a.votos_minimos,
-               'primary_release_date.lte':hoje,'page':page,**filtro}
-            res=get_json(f'{API}/discover/movie?'+urllib.parse.urlencode(q),token).get('results',[])
-            if not res:break
+               'primary_release_date.lte':hoje,'page':proxima_pagina[gen],**filtro}
+            resp=get_json(f'{API}/discover/movie?'+urllib.parse.urlencode(q),token)
+            res=resp.get('results',[]);proxima_pagina[gen]+=1
+            if not res or proxima_pagina[gen]>(resp.get('total_pages') or 500):esgotado.add(gen)
             for r in res:
-                if precisa<=0:break
+                if adicionados>=limite:break
                 ano=int((r.get('release_date') or '0')[:4] or 0)
                 if not ano or not r.get('poster_path') or r['id'] in usados_tmdb:continue
                 if (norm(r.get('title')),ano) in usados_tit or (norm(r.get('original_title')),ano) in usados_tit:continue
@@ -208,11 +241,7 @@ def main():
                     if not re.fullmatch(r'/[a-zA-Z0-9_-]+\.(jpg|png)',poster or ''):pulados+=1;continue
                     if not a.simular:
                         destino=ROOT/'capas'/(fid+'.jpg')
-                        if not destino.exists():
-                            req=urllib.request.Request('https://image.tmdb.org/t/p/w185'+poster,headers={'User-Agent':'CineExpertAcademico/4.6'})
-                            with urllib.request.urlopen(req,timeout=20) as rsp:raw=rsp.read(600_001)
-                            if len(raw)>600_000 or raw[:2]!=b'\xff\xd8':pulados+=1;continue
-                            destino.write_bytes(raw)
+                        if not destino.exists() and not baixar_capa(poster,destino):pulados+=1;continue
                     f={'id':fid,'titulo':titulo,'ano':ano,'genero':gen,'formato':'animacao' if gen=='animacao' else 'live_action',
                        'atmosferas':c['atmosferas'],'narrativas':c['narrativas'],'ritmo':c['ritmo'],'tem_reviravolta':c['tem_reviravolta'],
                        'tags':c['tags'],'busca_tmdb':info.get('original_title') or titulo,'tmdb_id':r['id'],
@@ -223,26 +252,41 @@ def main():
                     novos_meta[fid]={'poster':True,'tmdb_id':r['id'],'overview':info.get('overview') or '','runtime':info.get('runtime'),
                        'vote_average':info.get('vote_average'),'director':next((x.get('name','') for x in crew if x.get('job')=='Director'),''),
                        'cast':[x.get('name','') for x in info.get('credits',{}).get('cast',[])[:5]]}
-                    novos.append(f);ids.add(fid);usados_tmdb.add(r['id']);usados_tit.add((norm(titulo),ano));precisa-=1
+                    novos.append(f);ids.add(fid);usados_tmdb.add(r['id']);usados_tit.add((norm(titulo),ano));adicionados+=1
                     relatorio.append([fid,titulo,ano,gen,c['perfil'] or '',' '.join(c['atmosferas']),' '.join(c['narrativas']),c['ritmo'],'sim' if c['tem_reviravolta'] else 'não',str(len(kws))])
+                    if len(novos)-salvos>=200:salvar()
                     time.sleep(0.03)
                 except (urllib.error.URLError,TimeoutError,ValueError,KeyError) as e:
                     pulados+=1;print(f"  aviso: {r.get('title')} ignorado ({e})")
-            page+=1
-        if precisa>0:print(f'  {gen}: faltaram {precisa} (o TMDB não tinha mais filmes com {a.votos_minimos}+ votos sem repetir)')
+        return adicionados
+
+    try:
+        # 1ª passada: cota igual por gênero.
+        for gen,filtro in GENEROS:
+            atual=sum(1 for f in filmes if f['genero']==gen)+sum(1 for f in novos if f['genero']==gen)
+            precisa=min(cota-atual,faltam-len(novos))
+            print(f'{gen}: {atual} no catálogo, buscando {max(precisa,0)} novos...')
+            if precisa>0:
+                got=coletar(gen,filtro,precisa)
+                if got<precisa:print(f'  {gen}: o TMDB não tinha mais {precisa-got} filmes com {a.votos_minimos}+ votos sem repetir')
+        # 2ª passada: vagas que sobraram vão para os gêneros que ainda têm filmes.
+        if len(novos)<faltam:
+            print(f'Redistribuindo {faltam-len(novos)} vagas entre os gêneros que ainda têm filmes...')
+            for gen,filtro in GENEROS:
+                if len(novos)>=faltam:break
+                coletar(gen,filtro,faltam-len(novos))
+    except KeyboardInterrupt:
+        print('\nInterrompido. Salvando o que já foi coletado...')
+        salvar(final=True);print('Rode o mesmo comando de novo para continuar.');return
+
     print(f'\nNovos filmes: {len(novos)} · ignorados: {pulados} · catálogo final: {len(filmes)+len(novos)}')
+    if len(novos)<faltam:print(f'Faltaram {faltam-len(novos)} para chegar a {a.total}. Para ir além, rode de novo com --votos-minimos menor (ex.: 100).')
     sem_perfil=sum(1 for r in relatorio if not r[4]);print(f'Sem subgênero identificado: {sem_perfil} (continuam recomendáveis pelo gênero e demais critérios)')
-    rel=ROOT/'dev'/'expansao_relatorio.csv'
     if a.simular:
         for r in relatorio[:25]:print('  ',r)
         print('Simulação: nada foi gravado.');return
-    dados['filmes']=filmes+novos;meta.update(novos_meta)
-    (ROOT/'dados.js').write_text(DPRE+json.dumps(dados,ensure_ascii=False,separators=(',',':'))+';\n',encoding='utf-8')
-    (ROOT/'metadados.js').write_text(MPRE+json.dumps(meta,ensure_ascii=False,separators=(',',':'))+';\n',encoding='utf-8')
-    import csv
-    with rel.open('w',newline='',encoding='utf-8-sig') as fh:
-        w=csv.writer(fh,delimiter=';');w.writerow(['id','titulo','ano','genero','subgenero','atmosferas','narrativas','ritmo','reviravolta','palavras_chave']);w.writerows(relatorio)
-    print(f'Gravado: dados.js, metadados.js, {len(novos)} capas em capas/ e o relatório {rel.relative_to(ROOT)}.')
+    salvar(final=True)
+    print(f'Gravado: dados.js, metadados.js, sinopses/, {len(novos)} capas em capas/ e o relatório {rel.relative_to(ROOT)}.')
     print('Confira com: node dev/testes_catalogo.cjs  — depois faça commit e push.')
 
 if __name__=='__main__':main()

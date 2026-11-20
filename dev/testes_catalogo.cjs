@@ -38,6 +38,16 @@ for(const f of F){
   if(M[f.id]&&M[f.id].poster)check(fs.existsSync(path.join(dir,'capas',f.id+'.jpg')),`${q}: capa marcada mas arquivo capas/${f.id}.jpg não existe`);
 }
 for(const k of Object.keys(M))check(ids.has(k),`metadados.js tem "${k}", que não existe em dados.js`);
+// Sinopses em pacotes (sinopses/NN.json): cada filme no pacote do seu hash e só filmes existentes.
+const pastaSin=path.join(dir,'sinopses');let comSinopse=0;
+if(fs.existsSync(pastaSin)){
+  const fnv=t=>{let h=2166136261;for(const c of String(t)){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
+  for(const arq of fs.readdirSync(pastaSin).filter(x=>x.endsWith('.json'))){
+    const n=parseInt(arq,10),pac=JSON.parse(fs.readFileSync(path.join(pastaSin,arq),'utf8'));
+    for(const id of Object.keys(pac)){comSinopse++;check(ids.has(id),`sinopses/${arq} tem "${id}", que não existe em dados.js`);check(fnv(id)%64===n,`"${id}" está no pacote errado (${arq})`);}
+  }
+  check(!Object.values(M).some(m=>'overview' in m),'metadados.js ainda tem sinopses: rode python dev/dividir_metadados.py');
+}
 // Todo gênero continua recomendável e cada subgênero tem filmes.
 for(const g of GEN)check(E.recomendar({genero:g},5).lista.length===5,`gênero ${g} com menos de 5 recomendações`);
 for(const p of D.perfis)check(F.some(f=>f.classificacao_status!=='pendente'&&f.tags.includes(p.entao.perfil)),`subgênero ${p.entao.perfil} sem nenhum filme`);
@@ -45,4 +55,4 @@ if(erros.length){console.error(`${erros.length} problema(s) no catálogo:`);erro
 const auto=F.filter(f=>f.origem==='automatica').length;
 const porGenero=GEN.map(g=>`${g} ${F.filter(f=>f.genero===g).length}`).join(', ');
 const capas=F.filter(f=>M[f.id]&&M[f.id].poster).length;
-console.log(`CATÁLOGO VÁLIDO: ${F.length} filmes (${F.length-auto} curados, ${auto} automáticos), ${capas} com capa. Por gênero: ${porGenero}.`);
+console.log(`CATÁLOGO VÁLIDO: ${F.length} filmes (${F.length-auto} curados, ${auto} automáticos), ${capas} com capa, ${comSinopse} com sinopse em pacotes. Por gênero: ${porGenero}.`);

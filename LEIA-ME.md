@@ -80,3 +80,19 @@ node dev/testes_4_4.cjs
 O script grava `dados.js`, `metadados.js`, as capas em `capas/` (tamanho w185, cerca de 14 KB cada, ~11 MB no total) e um relatório em `dev/expansao_relatorio.csv` com a classificação de cada filme. Depois é só fazer commit e push.
 
 Opções: `--total N` define o tamanho final; `--votos-minimos N` ignora filmes pouco votados (padrão 300). Para desfazer a expansão antes do commit, use `git checkout dados.js metadados.js` e `git clean -f capas/`.
+
+## Catálogo grande: 2.000, 5.000 ou 10.000 filmes
+O mesmo `expandir_catalogo.py` vai além de 1.000. Ele continua de onde parou: cada execução só acrescenta filmes até o `--total` pedido.
+
+```powershell
+# Suba em etapas e confira o resultado no site a cada uma
+uv run --no-project python dev/expandir_catalogo.py --env "env\.env" --total 2000
+uv run --no-project python dev/expandir_catalogo.py --env "env\.env" --total 5000
+uv run --no-project python dev/expandir_catalogo.py --env "env\.env" --total 10000 --votos-minimos 100
+node dev/testes_catalogo.cjs
+```
+
+- **Tempo:** cerca de 1 segundo por filme (consulta e capa). Para 10.000 filmes, conte 1 a 2 horas. O progresso é salvo a cada 200 filmes; se cair ou você apertar Ctrl+C, rode o mesmo comando de novo que ele continua.
+- **Quantidade disponível:** o TMDB não tem 1.250 filmes "puros" de cada gênero com 300+ votos. O script redistribui as vagas entre os gêneros que ainda têm filmes e, se mesmo assim faltar, avisa: rode de novo com `--votos-minimos 100` (filmes menos conhecidos).
+- **Sinopses em pacotes:** sinopse e elenco ficam em `sinopses/00.json` a `63.json` e são baixados só quando alguém abre a ficha. `metadados.js` guarda apenas capa, nota, duração e direção. Os scripts fazem essa separação sozinhos (`dev/dividir_metadados.py`).
+- **Publicar:** `git add dados.js metadados.js sinopses capas dev/expansao_relatorio.csv`, depois commit e push.
