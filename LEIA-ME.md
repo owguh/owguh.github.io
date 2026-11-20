@@ -96,3 +96,19 @@ node dev/testes_catalogo.cjs
 - **Quantidade disponível:** o TMDB não tem 1.250 filmes "puros" de cada gênero com 300+ votos. O script redistribui as vagas entre os gêneros que ainda têm filmes e, se mesmo assim faltar, avisa: rode de novo com `--votos-minimos 100` (filmes menos conhecidos).
 - **Sinopses em pacotes:** sinopse e elenco ficam em `sinopses/00.json` a `63.json` e são baixados só quando alguém abre a ficha. `metadados.js` guarda apenas capa, nota, duração e direção. Os scripts fazem essa separação sozinhos (`dev/dividir_metadados.py`).
 - **Publicar:** `git add dados.js metadados.js sinopses capas dev/expansao_relatorio.csv`, depois commit e push.
+
+## Curadoria dos filmes automáticos
+Abra o site com `?curadoria=1` (por exemplo, `https://owguh.github.io/?curadoria=1`) ou use o botão "Curadoria dos filmes" no modo apresentação.
+
+1. A fila mostra primeiro os filmes **aguardando curadoria** e depois os automáticos, dos mais conhecidos para os menos. Dá para filtrar por gênero ou ver só os que estão sem subgênero.
+2. Para cada filme, confira e corrija gênero, subgênero, atmosfera (até 2), narrativa (até 2), ritmo, reviravolta e clássico. Depois aprove. Atalhos: Enter aprova, → pula, ← volta.
+3. As revisões ficam salvas no navegador. Quando quiser, toque em **Baixar arquivo** para gerar `cineexpert-curadoria.json`.
+4. Aplique no catálogo e publique:
+```powershell
+uv run --no-project python dev/aplicar_curadoria.py "$HOME\Downloads\cineexpert-curadoria.json"
+node dev/testes_catalogo.cjs
+git add dados.js
+git commit -m "Curadoria: N filmes revisados"
+git push
+```
+O script refaz as etiquetas das regras com a mesma função da classificação automática e marca os filmes revisados como `"origem": "curada"`, o que tira o aviso de classificação automática da ficha. Os que aguardavam curadoria passam a entrar nas recomendações. Depois de aplicar, use **Limpar revisões** na tela de curadoria para começar uma nova rodada.

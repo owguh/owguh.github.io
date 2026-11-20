@@ -75,6 +75,26 @@ KW={
 }
 def tem(kws,chave):return sum(1 for k in KW[chave] if any(k in x for x in kws))
 
+def derivar_tags(gen,atm,nar,ritmo,twist,perfil):
+    """Etiquetas das regras R01–R45, derivadas da classificação (como nos filmes curados).
+    Usada pela classificação automática e pela curadoria (dev/aplicar_curadoria.py)."""
+    tags=[]
+    regra=[('suspense',None,'reviravolta',twist),('suspense','investigacao','investigativo',None),('suspense','misterio','misterio_complexo',None),
+           ('suspense','sombria','sombrio',None),('suspense','rapido','ritmo_intenso',None),('suspense','psicologica','psicologico',None),
+           ('terror','psicologica','terror_psicologico',None),('terror','tensa','tensao_alta',None),('terror','lento','construcao_lenta',None),
+           ('animacao','fantastica','fantasia',None),('animacao','aventura','aventura',None),('animacao','leve','acolhedor',None),('animacao','emocional','emocional',None),
+           ('ficcao_cientifica','filosofica','filosofico',None),('ficcao_cientifica','aventura','aventura',None),('ficcao_cientifica','reflexiva','reflexivo',None),
+           ('drama','emocional','emocional',None),('comedia','leve','humor',None)]
+    fatos=set(atm)|set(nar)|{ritmo}
+    for g,fato,tag,cond in regra:
+        if g!=gen:continue
+        if (cond if fato is None else fato in fatos):tags.append(tag)
+    if twist and gen in ('terror','ficcao_cientifica'):tags.append('reviravolta')
+    if 'critica_social' in nar:tags.append('critica_social')
+    if not twist:tags.append('sem_reviravolta')
+    if perfil:tags.append(perfil)
+    return list(dict.fromkeys(tags))
+
 def classificar(gen,info,kws):
     """Classificação automática. Devolve atmosferas, narrativas, ritmo, reviravolta, perfil e etiquetas."""
     G={g['id'] for g in info.get('genres',[])}
@@ -137,22 +157,7 @@ def classificar(gen,info,kws):
     else:ritmo='moderado'
 
     twist=s['twist']>0
-    # Etiquetas das regras R01–R45, derivadas da classificação (como nos filmes curados).
-    tags=[]
-    regra=[('suspense',None,'reviravolta',twist),('suspense','investigacao','investigativo',None),('suspense','misterio','misterio_complexo',None),
-           ('suspense','sombria','sombrio',None),('suspense','rapido','ritmo_intenso',None),('suspense','psicologica','psicologico',None),
-           ('terror','psicologica','terror_psicologico',None),('terror','tensa','tensao_alta',None),('terror','lento','construcao_lenta',None),
-           ('animacao','fantastica','fantasia',None),('animacao','aventura','aventura',None),('animacao','leve','acolhedor',None),('animacao','emocional','emocional',None),
-           ('ficcao_cientifica','filosofica','filosofico',None),('ficcao_cientifica','aventura','aventura',None),('ficcao_cientifica','reflexiva','reflexivo',None),
-           ('drama','emocional','emocional',None),('comedia','leve','humor',None)]
-    fatos=set(atm)|set(nar)|{ritmo}
-    for g,fato,tag,cond in regra:
-        if g!=gen:continue
-        if (cond if fato is None else fato in fatos):tags.append(tag)
-    if twist and gen in ('terror','ficcao_cientifica'):tags.append('reviravolta')
-    if 'critica_social' in nar:tags.append('critica_social')
-    if not twist:tags.append('sem_reviravolta')
-    if perfil:tags.append(perfil)
+    tags=derivar_tags(gen,atm,nar,ritmo,twist,perfil)
     return {'atmosferas':atm,'narrativas':nar,'ritmo':ritmo,'tem_reviravolta':twist,'tags':list(dict.fromkeys(tags)),'perfil':perfil}
 
 def slug(s):

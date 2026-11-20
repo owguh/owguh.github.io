@@ -5,7 +5,7 @@ const dir=path.join(__dirname,'..');
 const ctx=vm.createContext({performance,console,module:{exports:{}}});
 for(const file of ['dados.js','motor.js','teste_escala.js']) vm.runInContext(fs.readFileSync(path.join(dir,file),'utf8'),ctx,{filename:file});
 const D=vm.runInContext('CINE_DATA',ctx),E=vm.runInContext('CINE_ENGINE',ctx),B=vm.runInContext('CINE_BENCHMARK',ctx);
-assert.equal(D.filmes.filter(f=>f.origem!=='automatica').length,200);assert(D.filmes.length>=200);assert.equal(D.regras.length,45);assert.equal(D.perfis.length,25);
+assert.equal(D.filmes.filter(f=>!f.origem).length,200);assert(D.filmes.length>=200);assert.equal(D.regras.length,45);assert.equal(D.perfis.length,25);
 assert.equal(new Set(D.filmes.map(m=>m.id)).size,D.filmes.length);
 const pref={genero:'terror',foco:'sobrenatural',atmosfera:'tensa',narrativa:'misterio',ritmo:'moderado',reviravolta:'indiferente'};
 assert.equal(E.correspondeEpoca(D.filmes.find(x=>x.id==='o-iluminado'),'antigo'),true);
