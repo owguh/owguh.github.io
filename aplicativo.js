@@ -528,18 +528,33 @@ function parecidos(f,n=12){
   .map(x=>({x,s:2*x.tags.filter(t=>tags.has(t)).length+x.atmosferas.filter(a=>f.atmosferas.includes(a)).length+(x.ritmo===f.ritmo?1:0)}))
   .sort((a,b)=>b.s-a.s||rating(b.x)-rating(a.x)).slice(0,n).map(o=>o.x);
 }
+// Sinopse e elenco ficam em sinopses/NN.json (64 pacotes), baixados só ao abrir uma ficha.
+// O pacote é o mesmo hash FNV-1a do id usado em dev/dividir_metadados.py.
+const PACOTES_SINOPSE=64,sinopsesCache={};
+function carregarSinopse(id){
+ const m=META[id]||{};
+ if(m.overview!==undefined)return Promise.resolve({o:m.overview||'',c:m.cast||[]});
+ const b=hash(id)%PACOTES_SINOPSE;
+ if(!sinopsesCache[b])sinopsesCache[b]=fetch(`sinopses/${String(b).padStart(2,'0')}.json`).then(r=>{if(!r.ok)throw new Error(r.status);return r.json();}).catch(e=>{delete sinopsesCache[b];throw e;});
+ return sinopsesCache[b].then(x=>x[id]||{o:'',c:[]});
+}
 function renderFilm(){
  const f=byId(state.chosen);if(!f){state.view='catalog';return renderCatalog();}
  const m=META[f.id]||{},src=posterSrc(f.id),visto=state.seen.has(f.id),n=nota(f);
- const sinopse=m.overview||'Sinopse ainda não disponível para este filme. As características usadas nas recomendações estão abaixo.';
  const similares=parecidos(f);
- APP.innerHTML=`<article class="film">${src?`<div class="film-backdrop" aria-hidden="true" style="background-image:url('${esc(src)}')"></div>`:''}<div class="film-top"><button class="iconbtn" id="film-back" aria-label="Voltar">${ICON.back}</button><button class="iconbtn" id="film-share" aria-label="Compartilhar filme">${ICON.share}</button></div><div class="film-hero">${posterArt(f,'film-art',true)}<div class="film-info"><h1>${esc(f.titulo)}</h1><p class="film-meta">${metaSpans([labelGenero(f.genero),String(f.ano),f.formato==='animacao'?'Animação':'',m.runtime?`${m.runtime} min`:''])}${n?`<span class="film-rate" title="Nota no TMDB">${ICON.star}${n}</span>`:''}</p><div class="film-actions"><button class="btn${visto?' done':' primary'}" id="film-seen" aria-pressed="${visto}">${visto?`${ICON.check} Visto`:'Marcar como visto'}</button>${m.tmdb_id?`<a class="btn quiet" href="https://www.themoviedb.org/movie/${Number(m.tmdb_id)}" target="_blank" rel="noopener noreferrer">Abrir no TMDB</a>`:''}</div><p class="film-synopsis" id="synopsis">${esc(sinopse)}</p><button class="link" id="more-synopsis">Ler mais</button>${m.director||m.cast?.length?`<dl class="credits">${m.director?`<div><dt>Direção</dt><dd>${esc(m.director)}</dd></div>`:''}${m.cast?.length?`<div><dt>Elenco</dt><dd>${esc(m.cast.slice(0,5).join(', '))}</dd></div>`:''}</dl>`:''}</div></div><section class="film-section"><h2>Como o CineExpert vê este filme</h2><dl class="traits"><div><dt>Atmosfera</dt><dd>${esc(f.atmosferas.map(nice).join(', '))}</dd></div><div><dt>Narrativa</dt><dd>${esc(f.narrativas.map(x=>ROT[x]||nice(x)).join(', '))}</dd></div><div><dt>Ritmo</dt><dd>${esc(nice(f.ritmo))}</dd></div></dl><div class="tags">${f.tags.filter(t=>t!=='sem_reviravolta').slice(0,8).map(t=>`<span class="tag">${esc(nice(t))}</span>`).join('')}</div><p class="fine">${f.origem==='automatica'?'Características geradas automaticamente a partir dos gêneros e das palavras-chave do TMDB, sem revisão editorial.':'Características definidas pela curadoria do CineExpert.'}</p></section>${similares.length?`<section class="film-section"><h2>Parecidos</h2>${rail(similares)}</section>`:''}</article>`;
+ APP.innerHTML=`<article class="film">${src?`<div class="film-backdrop" aria-hidden="true" style="background-image:url('${esc(src)}')"></div>`:''}<div class="film-top"><button class="iconbtn" id="film-back" aria-label="Voltar">${ICON.back}</button><button class="iconbtn" id="film-share" aria-label="Compartilhar filme">${ICON.share}</button></div><div class="film-hero">${posterArt(f,'film-art',true)}<div class="film-info"><h1>${esc(f.titulo)}</h1><p class="film-meta">${metaSpans([labelGenero(f.genero),String(f.ano),f.formato==='animacao'?'Animação':'',m.runtime?`${m.runtime} min`:''])}${n?`<span class="film-rate" title="Nota no TMDB">${ICON.star}${n}</span>`:''}</p><div class="film-actions"><button class="btn${visto?' done':' primary'}" id="film-seen" aria-pressed="${visto}">${visto?`${ICON.check} Visto`:'Marcar como visto'}</button>${m.tmdb_id?`<a class="btn quiet" href="https://www.themoviedb.org/movie/${Number(m.tmdb_id)}" target="_blank" rel="noopener noreferrer">Abrir no TMDB</a>`:''}</div><p class="film-synopsis loading" id="synopsis" aria-busy="true">Carregando sinopse…</p><button class="link" id="more-synopsis" hidden>Ler mais</button><dl class="credits">${m.director?`<div><dt>Direção</dt><dd>${esc(m.director)}</dd></div>`:''}<div id="cast-row" hidden><dt>Elenco</dt><dd id="cast"></dd></div></dl></div></div><section class="film-section"><h2>Como o CineExpert vê este filme</h2><dl class="traits"><div><dt>Atmosfera</dt><dd>${esc(f.atmosferas.map(nice).join(', '))}</dd></div><div><dt>Narrativa</dt><dd>${esc(f.narrativas.map(x=>ROT[x]||nice(x)).join(', '))}</dd></div><div><dt>Ritmo</dt><dd>${esc(nice(f.ritmo))}</dd></div></dl><div class="tags">${f.tags.filter(t=>t!=='sem_reviravolta').slice(0,8).map(t=>`<span class="tag">${esc(nice(t))}</span>`).join('')}</div><p class="fine">${f.origem==='automatica'?'Características geradas automaticamente a partir dos gêneros e das palavras-chave do TMDB, sem revisão editorial.':'Características definidas pela curadoria do CineExpert.'}</p></section>${similares.length?`<section class="film-section"><h2>Parecidos</h2>${rail(similares)}</section>`:''}</article>`;
  document.getElementById('film-back').onclick=()=>goBack(()=>{state.view=state.origin||'catalog';});
  document.getElementById('film-share').onclick=()=>shareResults([f.titulo]);
  document.getElementById('film-seen').onclick=()=>{state.seen.has(f.id)?state.seen.delete(f.id):state.seen.add(f.id);saveSeen();renderFilm();};
  const ms=document.getElementById('more-synopsis'),sy=document.getElementById('synopsis');
- // Só mostra "Ler mais" se a sinopse realmente foi cortada.
- if(ms){if(sy.scrollHeight<=sy.clientHeight+2)ms.remove();else ms.onclick=()=>{sy.classList.add('open');ms.remove();};}
+ carregarSinopse(f.id).then(x=>{
+   if(state.view!=='film'||state.chosen!==f.id||!sy.isConnected)return;
+   sy.textContent=x.o||'Sinopse ainda não disponível para este filme. As características usadas nas recomendações estão abaixo.';
+   if(x.c&&x.c.length){document.getElementById('cast').textContent=x.c.slice(0,5).join(', ');document.getElementById('cast-row').hidden=false;}
+   // Só mostra "Ler mais" se a sinopse realmente foi cortada.
+   if(sy.scrollHeight>sy.clientHeight+2){ms.hidden=false;ms.onclick=()=>{sy.classList.add('open');ms.remove();};}
+ }).catch(()=>{if(sy.isConnected)sy.textContent='A sinopse aparece quando houver internet. As características usadas nas recomendações estão abaixo.';})
+ .finally(()=>{sy.classList.remove('loading');sy.removeAttribute('aria-busy');});
  APP.querySelectorAll('.rail [data-film]').forEach(el=>el.onclick=()=>openFilm(el.dataset.film,'film'));
 }
 // O teste de escala só é baixado quando alguém abre o laboratório (modo apresentação).
