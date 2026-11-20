@@ -130,3 +130,11 @@ Regras:
 - Aprovar um filme na curadoria remove `fonte_classificacao` e `genero_sugerido`.
 
 Uso não comercial/acadêmico. Cite: Jesse Vig, Shilad Sen e John Riedl. 2012. *The Tag Genome: Encoding Community Knowledge to Support Novel Interaction*. ACM TiiS 2(3). E: F. Maxwell Harper e Joseph A. Konstan. 2015. *The MovieLens Datasets: History and Context*. ACM TiiS 5(4).
+
+## Filmes fora do MovieLens (classificação do assistente)
+
+Os 283 filmes que o MovieLens não cobre (quase todos de 2020 em diante) foram classificados um a um pelo assistente Claude, a partir da sinopse e do conhecimento geral de cada filme. A classificação está em `dev/classificacao_claude.csv` (uma linha por filme, fácil de abrir no Excel) e foi aplicada com:
+
+`uv run --no-project python dev/aplicar_classificacao.py dev/classificacao_claude.csv`
+
+O script valida cada valor contra as opções do gênero antes de gravar. Para corrigir algo, edite o CSV e rode de novo, ou aprove o filme na tela de curadoria. Esses filmes aparecem na curadoria e a ficha indica a origem da classificação. Filmes futuros sem dados podem ganhar um CSV no mesmo formato.
