@@ -138,3 +138,16 @@ Os 283 filmes que o MovieLens não cobre (quase todos de 2020 em diante) foram c
 `uv run --no-project python dev/aplicar_classificacao.py dev/classificacao_claude.csv`
 
 O script valida cada valor contra as opções do gênero antes de gravar. Para corrigir algo, edite o CSV e rode de novo, ou aprove o filme na tela de curadoria. Esses filmes aparecem na curadoria e a ficha indica a origem da classificação. Filmes futuros sem dados podem ganhar um CSV no mesmo formato.
+
+## Versão em Prolog
+
+`prolog/` tem o mesmo motor de inferência em Prolog, para estudo e apresentação. A base (`prolog/base_conhecimento.pl`) é gerada a partir de `dados.js`, então usa exatamente o mesmo conhecimento do aplicativo.
+
+1. Instale o SWI-Prolog: https://www.swi-prolog.org/download/stable
+2. Se mudar `dados.js`, gere a base de novo: `uv run --no-project python dev/gerar_prolog.py`
+3. Rode: `swipl prolog/motor.pl` e consulte, por exemplo:
+   - `?- recomendar([genero=suspense, narrativa=investigacao, reviravolta=sim], 3).`
+   - `?- recomendar([genero=terror, foco=sobrenatural, atmosfera=sombria], 3).`
+   - `?- explicar([genero=suspense, reviravolta=nao], 'clube-da-luta').`
+
+Fatos aceitos: `genero`, `formato`, `foco`, `atmosfera`, `narrativa`, `ritmo`, `reviravolta` (sim/nao) e `epoca` (antigo, intermediario, recente). O ranking e o desempate são os mesmos do `motor.js`.
